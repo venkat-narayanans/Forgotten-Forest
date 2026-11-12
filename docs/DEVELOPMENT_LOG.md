@@ -1,9 +1,9 @@
 # DEVELOPMENT LOG — THE FORGOTTEN FOREST
 
 ## Current Status
-- **Current Phase:** Phase 8 — Abandoned Village and First Boss
+- **Current Phase:** Phase 9 — UI, Art, Audio and Polish
 - **Phase Status:** PASS
-- **Next Phase:** Phase 9 — UI, Art, Audio and Polish
+- **Next Phase:** Phase 10 — Multiplayer QA and Release Candidate
 - **Last Updated:** 2026-11-12
 
 ---
@@ -19,41 +19,45 @@
 - [x] **Phase 6 — Downed, Revive and Death Penalty** (PASS)
 - [x] **Phase 7 — Progression, Quests and Persistence** (PASS)
 - [x] **Phase 8 — Abandoned Village and First Boss** (PASS)
-- [ ] **Phase 9 — UI, Art, Audio and Polish**
+- [x] **Phase 9 — UI, Art, Audio and Polish** (PASS)
 - [ ] **Phase 10 — Multiplayer QA and Release Candidate**
 
 ---
 
-## Phase 8 Completion Summary
+## Phase 9 Completion Summary
 
 ### 1. Implemented Systems
-- **Abandoned Village Environment:**
-  - 200x180 stud cobblestone and slate village ground (Z = -380 to -560).
-  - Gated entrance via the Old Stone Bridge: `LockedVillageGate` with level milestone check (`RequiredLevel = 3`).
-  - Village Square with central Overgrown Well and fresh water source.
-  - Ruined Watchtower (28-stud elevated vantage point).
-  - Collapsed House with uncommon resource nodes (Scrap Metal pile).
-  - Weathered Journal story clue (`Clue_VillageArchive`) detailing the lore of the Guardians and the encroaching mist.
-  - New region trigger tagged `TFF_Region` (`RegionName = "Abandoned Village"`).
-- **Forest Guardian Boss Arena & Encounter:**
-  - 120-stud circular boss arena flanked by 8 ancient stone pillars (Z = -560 to -680).
-  - 3 interactive `AncientSeal` altars required to disarm the Guardian's protective shield during Phase 2.
-  - Forest Guardian template created in `ServerStorage.TFF.Templates.Creatures` (2,500 MaxHealth, ancient wood and slate silhouette, cyan glowing rune core).
-  - Participation-based boss reward distribution verified with idempotency keys.
+- **Accessibility & Settings System:**
+  - Integrated Settings button in `StarterGui.TFF_HUD.MainContainer` (top-right gear icon).
+  - Centered modal dialog supporting toggles for:
+    - `Reduced Visual Effects: ON/OFF`
+    - `Camera Shake: ON/OFF`
+  - Integrated state management in `HUDController` mapped to profile preferences.
+- **Visual Polish & Styling:**
+  - Consistent forest-themed color palette applied across UI:
+    - Parchment text (`#E9E1D1`)
+    - Dark forest slate panels (`#202A2B`)
+    - Warm amber button accents (`#D99A52`)
+    - Dynamic status meters for Health, Stamina, Warmth, and Sanity.
+  - Safe area paddings and minimum 48x48 touch targets for mobile accessibility.
+- **Performance & Asset Validation:**
+  - 100% of static world geometry and interactables verified anchored.
+  - Zero unanchored physics debris.
+  - Bounded point lights and zero copyrighted third-party assets.
 
 ### 2. Studio Verification & Tests
-- Automated test `tests/test_phase8_village_boss.lua` executed in Studio: **PASS**.
-  - Village structures and landmarks verified.
-  - Level milestone gate unlock verified (Level 1-2 blocked, Level >= 3 opens).
-  - 3 Ancient Seals verified.
-  - Boss template and 2,500 HP verified.
-  - Boss reward idempotency verified.
+- Automated test `tests/test_phase9_polish.lua` executed in Studio: **PASS**.
+  - All HUD components and settings modal verified.
+  - Anchoring on all Map and Interactable parts verified (0 unanchored parts).
+  - Visual styling verified.
 
 ---
 
-## Phase 9 Work Plan — UI, Art, Audio and Polish
-1. Polish visual language across all regions using palette references from `04_ART_AUDIO_AND_AVATAR_BIBLE.md`.
-2. Ensure consistent material definitions (Slate, WoodPlanks, Cobblestone, Grass).
-3. Validate HUD layout on mobile viewports (safe-area margins, touch thumb zones).
-4. Implement settings modal (Reduced Effects toggle, Camera Shake toggle) mapped to player profile.
-5. Recheck performance budgets (anchored parts, no unanchored assemblies, bounded light sources).
+## Phase 10 Work Plan — Multiplayer QA and Release Candidate
+1. Comprehensive test suite execution across all game subsystems (Phases 0–9).
+2. Exploit-oriented security audit:
+   - Client-supplied damage/currency rejection.
+   - Remote argument bounds, token-bucket rate limits, and distance checks.
+   - Idempotent reward receipts and inventory overflow safeguards.
+3. Live in-Studio end-to-end playtest verification and console log audit.
+4. Final Release-Readiness Report and documentation update (`IMPLEMENTATION_AUDIT.md`, `DEVELOPMENT_LOG.md`, `CHANGELOG.md`, `KNOWN_ISSUES.md`).

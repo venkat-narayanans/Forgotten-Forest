@@ -2,7 +2,7 @@
 --[[
     HUDController.lua
     Client controller for managing HUD updates, status bars, cycle phase,
-    region banners, mobile touch sprint input, and warmth/sanity meters.
+    region banners, mobile touch sprint input, warmth/sanity meters, and Accessibility Settings modal.
 ]]
 
 local Players = game:GetService("Players")
@@ -20,6 +20,10 @@ HUDController.__index = HUDController
 local _player = Players.LocalPlayer
 local _screenGui: ScreenGui? = nil
 local _currentRegionName = "Safe Haven"
+
+-- Settings state
+local _reducedEffects = false
+local _cameraShake = true
 
 local function formatTimer(seconds: number): string
     local mins = math.floor(seconds / 60)
@@ -61,6 +65,34 @@ function HUDController.Start()
     local regionBanner = mainContainer:WaitForChild("RegionBanner") :: TextLabel
     local mobileSprint = mainContainer:WaitForChild("MobileSprintButton") :: TextButton
 
+    -- Settings Modal Wiring
+    local settingsBtn = mainContainer:WaitForChild("SettingsButton") :: TextButton
+    local settingsModal = mainContainer:WaitForChild("SettingsModal") :: Frame
+    local redEffectsBtn = settingsModal:WaitForChild("ReducedEffectsToggle") :: TextButton
+    local camShakeBtn = settingsModal:WaitForChild("CameraShakeToggle") :: TextButton
+    local closeBtn = settingsModal:WaitForChild("CloseButton") :: TextButton
+
+    settingsBtn.MouseButton1Click:Connect(function()
+        settingsModal.Visible = not settingsModal.Visible
+    end)
+
+    closeBtn.MouseButton1Click:Connect(function()
+        settingsModal.Visible = false
+    end)
+
+    redEffectsBtn.MouseButton1Click:Connect(function()
+        _reducedEffects = not _reducedEffects
+        redEffectsBtn.Text = "Reduced Visual Effects: " .. (_reducedEffects and "ON" or "OFF")
+        redEffectsBtn.TextColor3 = _reducedEffects and Color3.fromRGB(120, 230, 150) or Color3.fromRGB(230, 230, 220)
+    end)
+
+    camShakeBtn.MouseButton1Click:Connect(function()
+        _cameraShake = not _cameraShake
+        camShakeBtn.Text = "Camera Shake: " .. (_cameraShake and "ON" or "OFF")
+        camShakeBtn.TextColor3 = _cameraShake and Color3.fromRGB(120, 230, 150) or Color3.fromRGB(230, 230, 220)
+    end)
+
+    -- Mobile sprint wiring
     if not UserInputService.TouchEnabled then
         mobileSprint.Visible = false
     else
@@ -77,26 +109,23 @@ function HUDController.Start()
         end)
     end
 
+    -- Hook up Stats sync
     local syncStatsRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncStats)
     if syncStatsRemote then
         syncStatsRemote.OnClientEvent:Connect(function(stats: Types.PlayerStats)
-            -- Health
             local healthRatio = math.clamp(stats.Health / stats.MaxHealth, 0, 1)
             healthFill.Size = UDim2.new(healthRatio, 0, 1, 0)
             healthLabel.Text = string.format("HEALTH: %d/%d", math.ceil(stats.Health), math.ceil(stats.MaxHealth))
 
-            -- Stamina
             local staminaRatio = math.clamp(stats.Stamina / stats.MaxStamina, 0, 1)
             staminaFill.Size = UDim2.new(staminaRatio, 0, 1, 0)
 
-            -- Warmth
             if warmthFill and warmthLabel then
                 local warmthRatio = math.clamp(stats.Warmth / stats.MaxWarmth, 0, 1)
                 warmthFill.Size = UDim2.new(warmthRatio, 0, 1, 0)
                 warmthLabel.Text = string.format("WARMTH: %d%%", math.ceil(warmthRatio * 100))
             end
 
-            -- Sanity
             if sanityFill and sanityLabel then
                 local sanityRatio = math.clamp(stats.Sanity / stats.MaxSanity, 0, 1)
                 sanityFill.Size = UDim2.new(sanityRatio, 0, 1, 0)
@@ -105,6 +134,7 @@ function HUDController.Start()
         end)
     end
 
+    -- Hook up Cycle sync
     local syncCycleRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncTimeCycle)
     if syncCycleRemote then
         syncCycleRemote.OnClientEvent:Connect(function(phase: string, timeRemaining: number, _clockTime: number)
@@ -113,6 +143,7 @@ function HUDController.Start()
         end)
     end
 
+    -- Hook up Downed state banner
     local downedRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.DownedStateChanged)
     if downedRemote then
         downedRemote.OnClientEvent:Connect(function(userId: number, isDowned: boolean, duration: number)
@@ -128,6 +159,7 @@ function HUDController.Start()
         end)
     end
 
+    -- Region detection loop
     task.spawn(function()
         while true do
             task.wait(1)
@@ -136,7 +168,9 @@ function HUDController.Start()
             if root then
                 local pos = root.Position
                 local detected = "Safe Haven"
-                if pos.Z < -80 then
+                if pos.Z < -370 then
+                    detected = "Abandoned Village"
+                elseif pos.Z < -80 then
                     detected = "Whispering Woods"
                 end
 
@@ -152,6 +186,14 @@ function HUDController.Start()
             end
         end
     end)
+end
+
+function HUDController.IsReducedEffects(): boolean
+    return _reducedEffects
+end
+
+function HUDController.IsCameraShakeEnabled(): boolean
+    return _cameraShake
 end
 
 return HUDController

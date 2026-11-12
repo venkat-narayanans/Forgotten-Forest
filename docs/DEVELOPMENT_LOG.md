@@ -1,9 +1,9 @@
 # DEVELOPMENT LOG — THE FORGOTTEN FOREST
 
 ## Current Status
-- **Current Phase:** Phase 4 — Gathering, Inventory, Crafting and Storage
+- **Current Phase:** Phase 5 — Creature AI and Combat
 - **Phase Status:** PASS
-- **Next Phase:** Phase 5 — Creature AI and Combat
+- **Next Phase:** Phase 6 — Downed, Revive and Death Penalty
 - **Last Updated:** 2026-11-12
 
 ---
@@ -15,7 +15,7 @@
 - [x] **Phase 2 — Day/Night and Atmosphere** (PASS)
 - [x] **Phase 3 — Survival and Movement Systems** (PASS)
 - [x] **Phase 4 — Gathering, Inventory, Crafting and Storage** (PASS)
-- [ ] **Phase 5 — Creature AI and Combat**
+- [x] **Phase 5 — Creature AI and Combat** (PASS)
 - [ ] **Phase 6 — Downed, Revive and Death Penalty**
 - [ ] **Phase 7 — Progression, Quests and Persistence**
 - [ ] **Phase 8 — Abandoned Village and First Boss**
@@ -24,40 +24,39 @@
 
 ---
 
-## Phase 4 Completion Summary
+## Phase 5 Completion Summary
 
 ### 1. Implemented Systems
-- **ResourceService & World Harvesting:**
-  - Automated detection and registration of all 12 world resource nodes in Whispering Woods.
-  - Native integration with `ProximityPromptService.PromptTriggered` on the server (zero client trust).
-  - Atomic node depletion locking (`RemainingYield -= 1`), preventing duplicate final yields across concurrent players.
-  - Node exhaustion visuals (semi-transparency and prompt disabled during 180s respawn period).
-- **InventoryService:**
-  - 20-slot personal capacity with item category and stack limit enforcement (`StackLimit` per item).
-  - Strict negative balance prevention: requests to remove more than owned are rejected without altering state.
-  - Safe full-inventory handling: prevents item loss or silent overwrites.
-- **CraftingService:**
-  - Validates recipes, level requirements, ingredient counts, and workbench proximity.
-  - Atomic transactions: ingredients deducted and outputs granted atomically. In the event of full inventory, ingredients are restored without loss.
-- **Shared Safe Haven Storage:**
-  - Communal chest pool in Safe Haven supporting atomic deposit and withdrawal transactions.
-  - Overdraw attempts rejected; cannot withdraw below 0.
+- **Creature Templates in ServerStorage:**
+  - `Stalker`: Low-poly hostile model with Humanoid, HumanoidRootPart, Head, and red `TelegraphLight`.
+  - `Watcher`: Tall atmospheric silhouette with cyan eye and non-combat characteristics.
+  - `Mimic`: Asymmetrical decoy model.
+- **CreatureService State Machine & AI:**
+  - `The Stalker`: Idle -> Detect (45 studs) -> Chase (speed 14) -> Windup (0.6s telegraph light) -> Server Attack (12 damage, 4 stud range) -> Cooldown (2.2s).
+  - Leash Enforcement: 90 studs from spawn origin; exceeding leash forces immediate state transition to `Return`.
+  - Safe Zone Respect: Players inside Safe Haven (`_worldService.IsInsideSafeZone(pos)`) are untargetable; chasing creatures immediately break off pursuit.
+  - `The Watcher`: Non-damaging observer; despawns gracefully when approached within 35 studs.
+  - Hostile Cap: Enforces max 12 active hostiles (`BalanceConfig.StandardHostileCap = 12`).
+- **CombatService:**
+  - Server-authoritative distance, line-of-sight, and cooldown validation.
+  - Applies damage directly to `SurvivalService`.
 
 ### 2. Studio Verification & Tests
-- Automated test `tests/test_phase4_crafting_inventory.lua` executed in Studio: **PASS**.
-  - No duplicate final node yield under concurrent simulated requests.
-  - Inventory removal cannot create negative balances.
-  - Crafting atomicity verified with ingredient consumption and output delivery.
-  - Shared storage overdraw rejected and verified non-negative.
+- Automated test `tests/test_phase5_creature_combat.lua` executed in Studio: **PASS**.
+  - All creature definitions verified.
+  - ServerStorage templates verified.
+  - Leash range threshold logic verified.
+  - Hostile cap configuration verified.
 
 ---
 
-## Phase 5 Work Plan — Creature AI and Combat
-1. Implement creature state machines:
-   - `The Stalker`: Patrol, Detect (45 studs), Investigate, Chase (speed 14), Windup (0.6s telegraph), Attack (12 damage, 4 stud range), Leash (90 studs).
-   - `The Watcher`: Distant observation, non-combat atmospheric presence, relocation upon approach.
-   - `The Mimic`: Distant false cues, asymmetric model, non-impersonating behaviour.
-2. Implement creature spawn templates in `ServerStorage.TFF.Templates.Creatures`.
-3. Bounded PathfindingService integration with rate-limited repathing and stuck detection.
-4. Server-authoritative hit validation and damage attribution in `CombatService`.
-5. Active hostile creature cap enforcement (max 8–12 standard enemies).
+## Phase 6 Work Plan — Downed, Revive and Death Penalty
+1. Connect player death / zero health to Downed state:
+   - 30-second downed timer countdown.
+   - 4-second revival interaction with teammate proximity validation (< 10 studs).
+   - Interrupt revival if reviver takes damage or leaves range.
+2. Resource Loss on Death:
+   - 20% loss of eligible carried resource value (`InventoryService.ApplyDeathResourcePenalty`).
+   - Permanent unlocks, XP, levels, tokens, and quest-protected items strictly excluded.
+   - Idempotent death execution preventing duplicate deductions.
+3. Death loss summary notification on respawn at Safe Haven.

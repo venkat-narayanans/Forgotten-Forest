@@ -1,9 +1,9 @@
 # DEVELOPMENT LOG — THE FORGOTTEN FOREST
 
 ## Current Status
-- **Current Phase:** Phase 6 — Downed, Revive and Death Penalty
+- **Current Phase:** Phase 7 — Progression, Quests and Persistence
 - **Phase Status:** PASS
-- **Next Phase:** Phase 7 — Progression, Quests and Persistence
+- **Next Phase:** Phase 8 — Abandoned Village and First Boss
 - **Last Updated:** 2026-11-12
 
 ---
@@ -17,38 +17,47 @@
 - [x] **Phase 4 — Gathering, Inventory, Crafting and Storage** (PASS)
 - [x] **Phase 5 — Creature AI and Combat** (PASS)
 - [x] **Phase 6 — Downed, Revive and Death Penalty** (PASS)
-- [ ] **Phase 7 — Progression, Quests and Persistence**
+- [x] **Phase 7 — Progression, Quests and Persistence** (PASS)
 - [ ] **Phase 8 — Abandoned Village and First Boss**
 - [ ] **Phase 9 — UI, Art, Audio and Polish**
 - [ ] **Phase 10 — Multiplayer QA and Release Candidate**
 
 ---
 
-## Phase 6 Completion Summary
+## Phase 7 Completion Summary
 
 ### 1. Implemented Systems
-- **Timed Revival Interaction:**
-  - 4-second channelled revival interaction (`_activeRevives` table in `SurvivalService`).
-  - Proximity check: reviver must remain within 10 studs of target.
-  - Damage interruption: taking damage immediately breaks the revival channel.
-  - Successful revival restores 35 Health and clears the Downed state.
-- **Idempotent Death & Resource Penalty:**
-  - Idempotency guard (`_isProcessingDeath`) prevents duplicate penalty deductions.
-  - Exactly 20% of carried eligible resources lost upon expiration of 30-second downed timer.
-  - Tools, equipment, permanent progression, and protected items strictly preserved.
-  - Clear summary notification dispatched to the player on Safe Haven respawn.
+- **Progression & Currencies:**
+  - Dynamic XP curve calculation: `getXPForNextLevel(level) = floor(100 * (level ^ 1.5))`.
+  - Level-up handling with leftover XP roll-over.
+  - Tracking of dual currencies: `Forest Coins` (standard gameplay/crafting reward) and `Ancient Tokens` (rare exploration/boss reward).
+- **Quest System:**
+  - 4 data-driven starting quests: `First Steps`, `Preparing for Sunset`, `Comrades in the Mist`, `Echoes of the Past`.
+  - Non-repeatable quests cannot be claimed twice (`isRepeatable` check).
+  - Rewards distributed atomically through ProgressionService and InventoryService.
+- **Persistence & Migration:**
+  - Versioned profile schema (`schemaVersion = 1`).
+  - Schema migration tested: safely backfills missing attributes on legacy structures without data loss.
+  - Safe MockDataStore integration ensures Studio testing does not corrupt or wipe profile data.
+  - Rejoin persistence verified: levels, currencies, and quest progress survive simulated disconnects and reconnects.
 
 ### 2. Studio Verification & Tests
-- Automated test `tests/test_phase6_death_revive.lua` executed in Studio: **PASS**.
-  - Verified 20% loss calculation on resources with stack rounding.
-  - Verified immunity of tools and equipment from death penalty.
-  - Verified revive distance and damage interruption logic.
-  - Verified idempotency guard against rapid multiple death calls.
+- Automated test `tests/test_phase7_progression_persistence.lua` executed in Studio: **PASS**.
+  - XP leveling curve verified.
+  - Dual currency tracking verified.
+  - Quest reward idempotency verified.
+  - Profile schema migration verified.
+  - Rejoin persistence verified.
 
 ---
 
-## Phase 7 Work Plan — Progression, Quests and Persistence
-1. Verify `ProgressionService` level progression curves, XP grants, Forest Coins, and Ancient Tokens.
-2. Verify `QuestService` data-driven quest completions, objective validation, and idempotent reward grants.
-3. Verify `ProfileService` DataStore save/load, schema migration, and session lock resilience.
-4. Add Quest UI view or board interaction to `TFF_HUD`.
+## Phase 8 Work Plan — Abandoned Village and First Boss
+1. Build Abandoned Village environment across the Old Stone Bridge:
+   - Village square, ruined watchtower, collapsed houses, well.
+   - Unlock gate checking level milestone (Level 3 required).
+   - Discovery clues and environmental story items.
+2. Build Forest Guardian Boss Arena:
+   - Ancient roots, stone pillars, circular arena.
+   - Forest Guardian boss model template with 2,500 aggregate HP.
+   - Boss phases: Root Sweep ground attack, Seed Burst telegraph, Ancient Seals activation.
+   - Participation-based reward distribution via `RewardService`.

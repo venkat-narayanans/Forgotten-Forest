@@ -1,9 +1,9 @@
 # DEVELOPMENT LOG — THE FORGOTTEN FOREST
 
 ## Current Status
-- **Current Phase:** Phase 2 — Day/Night and Atmosphere
+- **Current Phase:** Phase 3 — Survival and Movement Systems
 - **Phase Status:** PASS
-- **Next Phase:** Phase 3 — Survival and Movement Systems
+- **Next Phase:** Phase 4 — Gathering, Inventory, Crafting and Storage
 - **Last Updated:** 2026-11-12
 
 ---
@@ -13,7 +13,7 @@
 - [x] **Phase 0 — Audit and Project Foundation** (PASS)
 - [x] **Phase 1 — Graybox World and Player Foundation** (PASS)
 - [x] **Phase 2 — Day/Night and Atmosphere** (PASS)
-- [ ] **Phase 3 — Survival and Movement Systems**
+- [x] **Phase 3 — Survival and Movement Systems** (PASS)
 - [ ] **Phase 4 — Gathering, Inventory, Crafting and Storage**
 - [ ] **Phase 5 — Creature AI and Combat**
 - [ ] **Phase 6 — Downed, Revive and Death Penalty**
@@ -24,34 +24,34 @@
 
 ---
 
-## Phase 2 Completion Summary
+## Phase 3 Completion Summary
 
 ### 1. Implemented Systems
-- **TimeCycleService:**
-  - Authoritative 20-minute cycle (Morning: 180s, Afternoon: 300s, Sunset: 120s, Night: 420s, Dawn: 180s).
-  - Dynamic Lighting transitions via `TweenService` (ClockTime, Brightness, OutdoorAmbient, FogColor, FogStart, FogEnd).
-  - Night atmosphere tuned for readability: non-pitch-black visibility (Brightness 0.5, FogEnd 250 studs) preserving path navigation.
-  - Periodic client replication and late-join synchronization via `SyncTimeCycle` RemoteEvent.
-- **Atmospheric Audio Foundation:**
-  - Ambient sound architecture in `SoundService` (`DayAmbience`, `NightAmbience`, `PhaseTransitionChime`).
-  - Implemented `AudioController` on client with smooth cross-fading tweening between Day and Night layers and safe asset-loading guards.
-- **UI Cycle Display:**
-  - Phase indicator and countdown timer synchronized in real-time in `StarterGui.TFF_HUD.MainContainer.CycleIndicator`.
+- **Survival Attribute Dynamics:**
+  - Full server-authoritative tracking for Health (100), Stamina (100), Warmth (100), and Sanity (100).
+  - Stamina Drain: 12 stamina/sec while sprinting, strictly clamped at 0 (cannot go negative).
+  - Sprint Gate: Sprinting blocked if stamina is below 10.
+  - Stamina Regen: 18 stamina/sec after 1.0s recovery delay, capped at 100.
+  - Safe Haven Regeneration: +2 Health/sec and +3 Sanity/sec inside `TFF_SafeZone`.
+- **Movement & Downed Controls:**
+  - WalkSpeed set to 16 studs/sec (default), 22 studs/sec (sprint).
+  - Downed state triggered when Health hits 0; player is set to stationary (WalkSpeed 0) with a 30s timer.
+  - Teammate revival flow verified (restores 35 Health and clears Downed state).
+- **HUD Extension:**
+  - Expanded `StarterGui.TFF_HUD.MainContainer.StatusBars` to display real-time Health, Stamina, Warmth, and Sanity meters.
+  - Desktop (Shift) and Mobile touch sprint button support verified.
 
 ### 2. Studio Verification & Tests
-- Automated test `tests/test_phase2_atmosphere.lua` executed in Studio: **PASS**.
-- Live In-Studio Playtest run:
-  - Cycle synchronization confirmed between server and client.
-  - Zero output errors or warnings in Output log.
-  - Day/Night audio cross-fade and lighting transitions verified.
+- Automated test `tests/test_phase3_survival.lua` executed in Studio: **PASS**.
+- Verified all attribute values remain strictly clamped within bounds `[0, Max]`.
+- Verified live playtest Output log remains completely error-free.
 
 ---
 
-## Phase 3 Work Plan — Survival and Movement Systems
-1. Complete `SurvivalService` integration:
-   - Full attribute updates for Health (100), Stamina (100), Warmth (100), Sanity (100).
-   - Sprint mechanics (12 stamina/sec drain, 18 stamina/sec regen, 1s delay, Shift key & mobile button).
-   - Downed state timer (30s) and revival interaction (4s, restores 35 health).
-   - Passive regeneration in Safe Haven (`TFF_SafeZone`).
-2. Update HUD bars for real-time attribute display.
-3. Automated unit and integration tests for bounds clamping, negative stamina prevention, and revival range.
+## Phase 4 Work Plan — Gathering, Inventory, Crafting and Storage
+1. Connect `ResourceService` to `ProximityPrompt` on all 12 world resource nodes.
+2. Implement server-side gather lock preventing contested harvest exploits.
+3. Verify `InventoryService` personal inventory management (20 slots, stack limits, atomic item manipulation).
+4. Verify `CraftingService` recipe consumption and atomic output delivery (Torch, Healing Potion, Hatchet, Barricades).
+5. Verify `SharedStorageChest` communal deposit and withdrawal transactions with negative balance protection.
+6. Connect Inventory and Crafting UI views in `StarterGui.TFF_HUD`.

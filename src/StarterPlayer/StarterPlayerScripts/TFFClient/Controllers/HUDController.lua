@@ -2,7 +2,7 @@
 --[[
     HUDController.lua
     Client controller for managing HUD updates, status bars, cycle phase,
-    region banners, and mobile touch sprint input.
+    region banners, mobile touch sprint input, and warmth/sanity meters.
 ]]
 
 local Players = game:GetService("Players")
@@ -46,6 +46,14 @@ function HUDController.Start()
     local staminaBg = statusBars:WaitForChild("StaminaBackground") :: Frame
     local staminaFill = staminaBg:WaitForChild("Fill") :: Frame
 
+    local warmthBg = statusBars:FindFirstChild("WarmthBackground") :: Frame?
+    local warmthFill = warmthBg and warmthBg:FindFirstChild("Fill") :: Frame?
+    local warmthLabel = warmthBg and warmthBg:FindFirstChild("Label") :: TextLabel?
+
+    local sanityBg = statusBars:FindFirstChild("SanityBackground") :: Frame?
+    local sanityFill = sanityBg and sanityBg:FindFirstChild("Fill") :: Frame?
+    local sanityLabel = sanityBg and sanityBg:FindFirstChild("Label") :: TextLabel?
+
     local cycleIndicator = mainContainer:WaitForChild("CycleIndicator") :: Frame
     local phaseLabel = cycleIndicator:WaitForChild("PhaseLabel") :: TextLabel
     local timerLabel = cycleIndicator:WaitForChild("TimerLabel") :: TextLabel
@@ -53,7 +61,6 @@ function HUDController.Start()
     local regionBanner = mainContainer:WaitForChild("RegionBanner") :: TextLabel
     local mobileSprint = mainContainer:WaitForChild("MobileSprintButton") :: TextButton
 
-    -- Configure mobile sprint button visibility
     if not UserInputService.TouchEnabled then
         mobileSprint.Visible = false
     else
@@ -70,20 +77,34 @@ function HUDController.Start()
         end)
     end
 
-    -- Hook up Stats sync
     local syncStatsRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncStats)
     if syncStatsRemote then
         syncStatsRemote.OnClientEvent:Connect(function(stats: Types.PlayerStats)
+            -- Health
             local healthRatio = math.clamp(stats.Health / stats.MaxHealth, 0, 1)
             healthFill.Size = UDim2.new(healthRatio, 0, 1, 0)
             healthLabel.Text = string.format("HEALTH: %d/%d", math.ceil(stats.Health), math.ceil(stats.MaxHealth))
 
+            -- Stamina
             local staminaRatio = math.clamp(stats.Stamina / stats.MaxStamina, 0, 1)
             staminaFill.Size = UDim2.new(staminaRatio, 0, 1, 0)
+
+            -- Warmth
+            if warmthFill and warmthLabel then
+                local warmthRatio = math.clamp(stats.Warmth / stats.MaxWarmth, 0, 1)
+                warmthFill.Size = UDim2.new(warmthRatio, 0, 1, 0)
+                warmthLabel.Text = string.format("WARMTH: %d%%", math.ceil(warmthRatio * 100))
+            end
+
+            -- Sanity
+            if sanityFill and sanityLabel then
+                local sanityRatio = math.clamp(stats.Sanity / stats.MaxSanity, 0, 1)
+                sanityFill.Size = UDim2.new(sanityRatio, 0, 1, 0)
+                sanityLabel.Text = string.format("SANITY: %d%%", math.ceil(sanityRatio * 100))
+            end
         end)
     end
 
-    -- Hook up Cycle sync
     local syncCycleRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncTimeCycle)
     if syncCycleRemote then
         syncCycleRemote.OnClientEvent:Connect(function(phase: string, timeRemaining: number, _clockTime: number)
@@ -92,7 +113,6 @@ function HUDController.Start()
         end)
     end
 
-    -- Hook up Downed state banner
     local downedRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.DownedStateChanged)
     if downedRemote then
         downedRemote.OnClientEvent:Connect(function(userId: number, isDowned: boolean, duration: number)
@@ -108,7 +128,6 @@ function HUDController.Start()
         end)
     end
 
-    -- Region detection loop (checks player position against regions)
     task.spawn(function()
         while true do
             task.wait(1)

@@ -1,9 +1,9 @@
 # DEVELOPMENT LOG — THE FORGOTTEN FOREST
 
 ## Current Status
-- **Current Phase:** Phase 3 — Survival and Movement Systems
+- **Current Phase:** Phase 4 — Gathering, Inventory, Crafting and Storage
 - **Phase Status:** PASS
-- **Next Phase:** Phase 4 — Gathering, Inventory, Crafting and Storage
+- **Next Phase:** Phase 5 — Creature AI and Combat
 - **Last Updated:** 2026-11-12
 
 ---
@@ -14,7 +14,7 @@
 - [x] **Phase 1 — Graybox World and Player Foundation** (PASS)
 - [x] **Phase 2 — Day/Night and Atmosphere** (PASS)
 - [x] **Phase 3 — Survival and Movement Systems** (PASS)
-- [ ] **Phase 4 — Gathering, Inventory, Crafting and Storage**
+- [x] **Phase 4 — Gathering, Inventory, Crafting and Storage** (PASS)
 - [ ] **Phase 5 — Creature AI and Combat**
 - [ ] **Phase 6 — Downed, Revive and Death Penalty**
 - [ ] **Phase 7 — Progression, Quests and Persistence**
@@ -24,34 +24,40 @@
 
 ---
 
-## Phase 3 Completion Summary
+## Phase 4 Completion Summary
 
 ### 1. Implemented Systems
-- **Survival Attribute Dynamics:**
-  - Full server-authoritative tracking for Health (100), Stamina (100), Warmth (100), and Sanity (100).
-  - Stamina Drain: 12 stamina/sec while sprinting, strictly clamped at 0 (cannot go negative).
-  - Sprint Gate: Sprinting blocked if stamina is below 10.
-  - Stamina Regen: 18 stamina/sec after 1.0s recovery delay, capped at 100.
-  - Safe Haven Regeneration: +2 Health/sec and +3 Sanity/sec inside `TFF_SafeZone`.
-- **Movement & Downed Controls:**
-  - WalkSpeed set to 16 studs/sec (default), 22 studs/sec (sprint).
-  - Downed state triggered when Health hits 0; player is set to stationary (WalkSpeed 0) with a 30s timer.
-  - Teammate revival flow verified (restores 35 Health and clears Downed state).
-- **HUD Extension:**
-  - Expanded `StarterGui.TFF_HUD.MainContainer.StatusBars` to display real-time Health, Stamina, Warmth, and Sanity meters.
-  - Desktop (Shift) and Mobile touch sprint button support verified.
+- **ResourceService & World Harvesting:**
+  - Automated detection and registration of all 12 world resource nodes in Whispering Woods.
+  - Native integration with `ProximityPromptService.PromptTriggered` on the server (zero client trust).
+  - Atomic node depletion locking (`RemainingYield -= 1`), preventing duplicate final yields across concurrent players.
+  - Node exhaustion visuals (semi-transparency and prompt disabled during 180s respawn period).
+- **InventoryService:**
+  - 20-slot personal capacity with item category and stack limit enforcement (`StackLimit` per item).
+  - Strict negative balance prevention: requests to remove more than owned are rejected without altering state.
+  - Safe full-inventory handling: prevents item loss or silent overwrites.
+- **CraftingService:**
+  - Validates recipes, level requirements, ingredient counts, and workbench proximity.
+  - Atomic transactions: ingredients deducted and outputs granted atomically. In the event of full inventory, ingredients are restored without loss.
+- **Shared Safe Haven Storage:**
+  - Communal chest pool in Safe Haven supporting atomic deposit and withdrawal transactions.
+  - Overdraw attempts rejected; cannot withdraw below 0.
 
 ### 2. Studio Verification & Tests
-- Automated test `tests/test_phase3_survival.lua` executed in Studio: **PASS**.
-- Verified all attribute values remain strictly clamped within bounds `[0, Max]`.
-- Verified live playtest Output log remains completely error-free.
+- Automated test `tests/test_phase4_crafting_inventory.lua` executed in Studio: **PASS**.
+  - No duplicate final node yield under concurrent simulated requests.
+  - Inventory removal cannot create negative balances.
+  - Crafting atomicity verified with ingredient consumption and output delivery.
+  - Shared storage overdraw rejected and verified non-negative.
 
 ---
 
-## Phase 4 Work Plan — Gathering, Inventory, Crafting and Storage
-1. Connect `ResourceService` to `ProximityPrompt` on all 12 world resource nodes.
-2. Implement server-side gather lock preventing contested harvest exploits.
-3. Verify `InventoryService` personal inventory management (20 slots, stack limits, atomic item manipulation).
-4. Verify `CraftingService` recipe consumption and atomic output delivery (Torch, Healing Potion, Hatchet, Barricades).
-5. Verify `SharedStorageChest` communal deposit and withdrawal transactions with negative balance protection.
-6. Connect Inventory and Crafting UI views in `StarterGui.TFF_HUD`.
+## Phase 5 Work Plan — Creature AI and Combat
+1. Implement creature state machines:
+   - `The Stalker`: Patrol, Detect (45 studs), Investigate, Chase (speed 14), Windup (0.6s telegraph), Attack (12 damage, 4 stud range), Leash (90 studs).
+   - `The Watcher`: Distant observation, non-combat atmospheric presence, relocation upon approach.
+   - `The Mimic`: Distant false cues, asymmetric model, non-impersonating behaviour.
+2. Implement creature spawn templates in `ServerStorage.TFF.Templates.Creatures`.
+3. Bounded PathfindingService integration with rate-limited repathing and stuck detection.
+4. Server-authoritative hit validation and damage attribution in `CombatService`.
+5. Active hostile creature cap enforcement (max 8–12 standard enemies).

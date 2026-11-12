@@ -2,11 +2,12 @@
 --[[
     CraftingService.lua
     Server-authoritative crafting system.
-    Validates recipes, stations, ingredients, and executes atomic crafting transactions.
+    Validates recipes, workbench station proximity, ingredients, and executes atomic transactions.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 local RecipeDefinitions = require(ReplicatedStorage.TFF.Shared.Definitions.RecipeDefinitions)
 local RemoteRegistry = require(ReplicatedStorage.TFF.Remotes.RemoteRegistry)
@@ -18,6 +19,22 @@ CraftingService.__index = CraftingService
 local _inventoryService: any = nil
 local _profileService: any = nil
 local _survivalService: any = nil
+
+local function isNearStation(player: Player, stationName: string): boolean
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+    if not root then return false end
+
+    for _, inst in ipairs(CollectionService:GetTagged("TFF_Interactable")) do
+        if inst:IsA("BasePart") and inst:GetAttribute("Station") == stationName then
+            local dist = (root.Position - inst.Position).Magnitude
+            if dist <= BalanceConfig.DefaultInteractionRange + 4 then
+                return true
+            end
+        end
+    end
+    return false
+end
 
 function CraftingService.Init(dependencies: { [string]: any })
     print("[CraftingService] Initializing CraftingService...")
@@ -42,19 +59,23 @@ function CraftingService.TryCraft(player: Player, recipeId: string, quantity: nu
     local recipe = RecipeDefinitions[recipeId]
     if not recipe then return false end
 
-    -- Check player stats and downed state
     local stats = _survivalService.GetStats(player)
     if not stats or stats.IsDowned then return false end
 
     local profile = _profileService.GetProfile(player)
     if not profile then return false end
 
-    -- Check unlock level / recipe unlock
     if recipe.UnlockLevel and profile.level < recipe.UnlockLevel then
         return false
     end
 
-    -- Validate ingredients
+    -- Station proximity validation
+    if recipe.StationRequired and not isNearStation(player, recipe.StationRequired) then
+        warn(string.format("[CraftingService] %s tried to craft %s without being near %s", player.Name, recipeId, recipe.StationRequired))
+        return false
+    end
+
+    -- Ingredient validation
     for _, ingredient in ipairs(recipe.Ingredients) do
         local requiredAmount = ingredient.Quantity * quantity
         local currentCount = _inventoryService.GetItemCount(player, ingredient.ItemId)
@@ -63,23 +84,20 @@ function CraftingService.TryCraft(player: Player, recipeId: string, quantity: nu
         end
     end
 
-    -- Atomic execution: remove ingredients
+    -- Atomic deduction
     for _, ingredient in ipairs(recipe.Ingredients) do
         local toRemove = ingredient.Quantity * quantity
         local removed = _inventoryService.TryRemoveItem(player, ingredient.ItemId, toRemove)
         if not removed then
-            -- Rollback if something failed unexpectedly
-            warn(string.format("[CraftingService] Ingredient removal failure during craft for %s", player.Name))
             return false
         end
     end
 
-    -- Grant output
+    -- Atomic output grant
     local totalOutput = recipe.OutputQuantity * quantity
     local added = _inventoryService.TryAddItem(player, recipe.OutputItemId, totalOutput)
     if not added then
-        warn(string.format("[CraftingService] Failed to add crafted item for %s: inventory full", player.Name))
-        -- In case of full inventory, return ingredients to prevent item loss
+        -- Rollback ingredients if inventory full
         for _, ingredient in ipairs(recipe.Ingredients) do
             _inventoryService.TryAddItem(player, ingredient.ItemId, ingredient.Quantity * quantity)
         end

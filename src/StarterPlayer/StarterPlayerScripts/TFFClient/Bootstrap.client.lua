@@ -16,15 +16,18 @@ local ControllersFolder = script.Parent:WaitForChild("Controllers")
 
 local InputController = require(ControllersFolder:WaitForChild("InputController"))
 local HUDController = require(ControllersFolder:WaitForChild("HUDController"))
+local AudioController = require(ControllersFolder:WaitForChild("AudioController"))
 
 local controllers = {
     InputController = InputController,
     HUDController = HUDController,
+    AudioController = AudioController,
 }
 
 local orderedKeys = {
     "InputController",
     "HUDController",
+    "AudioController",
 }
 
 for _, key in ipairs(orderedKeys) do

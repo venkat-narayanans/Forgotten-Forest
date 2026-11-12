@@ -1,9 +1,9 @@
 # DEVELOPMENT LOG — THE FORGOTTEN FOREST
 
 ## Current Status
-- **Current Phase:** Phase 1 — Graybox World and Player Foundation
+- **Current Phase:** Phase 2 — Day/Night and Atmosphere
 - **Phase Status:** PASS
-- **Next Phase:** Phase 2 — Day/Night and Atmosphere
+- **Next Phase:** Phase 3 — Survival and Movement Systems
 - **Last Updated:** 2026-11-12
 
 ---
@@ -12,7 +12,7 @@
 
 - [x] **Phase 0 — Audit and Project Foundation** (PASS)
 - [x] **Phase 1 — Graybox World and Player Foundation** (PASS)
-- [ ] **Phase 2 — Day/Night and Atmosphere**
+- [x] **Phase 2 — Day/Night and Atmosphere** (PASS)
 - [ ] **Phase 3 — Survival and Movement Systems**
 - [ ] **Phase 4 — Gathering, Inventory, Crafting and Storage**
 - [ ] **Phase 5 — Creature AI and Combat**
@@ -24,48 +24,34 @@
 
 ---
 
-## Phase 1 Completion Summary
+## Phase 2 Completion Summary
 
 ### 1. Implemented Systems
-- **Safe Haven Graybox:**
-  - 150x150 stud wooden base with central cobblestone plaza.
-  - 6 distributed `SpawnLocation` parts providing collision-free spawning for 8–12 players.
-  - Central campfire with particle fire and warm localized point light.
-  - Workbench crafting station with `ProximityPrompt` and `TFF_Interactable` tag.
-  - Communal Shared Storage chest with `ProximityPrompt` and `TFF_Interactable` tag.
-  - Quest Board with `ProximityPrompt` and `TFF_Interactable` tag.
-  - Server-enforced `TFF_SafeZone` trigger part (`Radius = 75`) in `TFF_World.SafeZones`.
-  - 12 boundary lantern posts marking Safe Haven perimeter.
-- **Whispering Woods Graybox:**
-  - Connecting 16-stud wide forest trail leading from Safe Haven into the deep woods.
-  - 240x240 stud dark forest green ground plate (`#254B3A`).
-  - Key landmarks constructed:
-    - Sunken water Creek and 8-stud wide Fallen Log Crossing bridge.
-    - Glowing Giant Mushroom Clearing with localized ambient lighting.
-    - Abandoned Campsite with weathered tent and extinguished fire pit.
-    - Elevated Watcher Overlook rock bluff.
-    - Old Stone Bridge leading North to the Abandoned Village with locked iron gate (`RequiredLevel = 3`).
-  - 20 low-poly trees framing trails and boundaries while maintaining unobstructed player paths.
-  - 12 interactive resource nodes (`Fallen Timber`, `River Stone`, `Soothing Moss`, `Wild Berries`) tagged with `TFF_ResourceNode` and ProximityPrompts.
-- **Player & UI Foundation:**
-  - Created `StarterGui.TFF_HUD` with Health bar, Stamina bar, Day/Night Cycle indicator, and dynamic Region banner.
-  - Touch-enabled mobile sprint button integrated into `HUDController`.
-  - Region detection logic updating display when crossing into Whispering Woods.
+- **TimeCycleService:**
+  - Authoritative 20-minute cycle (Morning: 180s, Afternoon: 300s, Sunset: 120s, Night: 420s, Dawn: 180s).
+  - Dynamic Lighting transitions via `TweenService` (ClockTime, Brightness, OutdoorAmbient, FogColor, FogStart, FogEnd).
+  - Night atmosphere tuned for readability: non-pitch-black visibility (Brightness 0.5, FogEnd 250 studs) preserving path navigation.
+  - Periodic client replication and late-join synchronization via `SyncTimeCycle` RemoteEvent.
+- **Atmospheric Audio Foundation:**
+  - Ambient sound architecture in `SoundService` (`DayAmbience`, `NightAmbience`, `PhaseTransitionChime`).
+  - Implemented `AudioController` on client with smooth cross-fading tweening between Day and Night layers and safe asset-loading guards.
+- **UI Cycle Display:**
+  - Phase indicator and countdown timer synchronized in real-time in `StarterGui.TFF_HUD.MainContainer.CycleIndicator`.
 
 ### 2. Studio Verification & Tests
-- Automated acceptance test `tests/test_phase1_graybox.lua` executed in Studio: **PASS**.
-- Live in-Studio playtest executed:
-  - Player character spawned safely on plaza spawn points.
-  - HUD rendered properly; health and stamina bars initialized to 100%.
-  - Mobile sprint button configured properly based on input capability.
-  - Zero runtime errors in Output log.
-- Visual inspection via `screen_capture` verified geometry, lighting, and path readability.
+- Automated test `tests/test_phase2_atmosphere.lua` executed in Studio: **PASS**.
+- Live In-Studio Playtest run:
+  - Cycle synchronization confirmed between server and client.
+  - Zero output errors or warnings in Output log.
+  - Day/Night audio cross-fade and lighting transitions verified.
 
 ---
 
-## Phase 2 Work Plan — Day/Night and Atmosphere
-1. Verify `TimeCycleService` full 20-minute cycle step progression (Morning, Afternoon, Sunset, Night, Dawn).
-2. Wire ambient audio placeholder cues for day vs night.
-3. Test late-join player synchronization during Night phase.
-4. Implement sanity audio/visual filter hooks at night.
-5. Verify smooth Lighting and Atmosphere transitions without frame drops or visual flashes.
+## Phase 3 Work Plan — Survival and Movement Systems
+1. Complete `SurvivalService` integration:
+   - Full attribute updates for Health (100), Stamina (100), Warmth (100), Sanity (100).
+   - Sprint mechanics (12 stamina/sec drain, 18 stamina/sec regen, 1s delay, Shift key & mobile button).
+   - Downed state timer (30s) and revival interaction (4s, restores 35 health).
+   - Passive regeneration in Safe Haven (`TFF_SafeZone`).
+2. Update HUD bars for real-time attribute display.
+3. Automated unit and integration tests for bounds clamping, negative stamina prevention, and revival range.

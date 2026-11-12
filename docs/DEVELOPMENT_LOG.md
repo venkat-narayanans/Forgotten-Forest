@@ -1,9 +1,9 @@
 # DEVELOPMENT LOG — THE FORGOTTEN FOREST
 
 ## Current Status
-- **Current Phase:** Phase 7 — Progression, Quests and Persistence
+- **Current Phase:** Phase 8 — Abandoned Village and First Boss
 - **Phase Status:** PASS
-- **Next Phase:** Phase 8 — Abandoned Village and First Boss
+- **Next Phase:** Phase 9 — UI, Art, Audio and Polish
 - **Last Updated:** 2026-11-12
 
 ---
@@ -18,46 +18,42 @@
 - [x] **Phase 5 — Creature AI and Combat** (PASS)
 - [x] **Phase 6 — Downed, Revive and Death Penalty** (PASS)
 - [x] **Phase 7 — Progression, Quests and Persistence** (PASS)
-- [ ] **Phase 8 — Abandoned Village and First Boss**
+- [x] **Phase 8 — Abandoned Village and First Boss** (PASS)
 - [ ] **Phase 9 — UI, Art, Audio and Polish**
 - [ ] **Phase 10 — Multiplayer QA and Release Candidate**
 
 ---
 
-## Phase 7 Completion Summary
+## Phase 8 Completion Summary
 
 ### 1. Implemented Systems
-- **Progression & Currencies:**
-  - Dynamic XP curve calculation: `getXPForNextLevel(level) = floor(100 * (level ^ 1.5))`.
-  - Level-up handling with leftover XP roll-over.
-  - Tracking of dual currencies: `Forest Coins` (standard gameplay/crafting reward) and `Ancient Tokens` (rare exploration/boss reward).
-- **Quest System:**
-  - 4 data-driven starting quests: `First Steps`, `Preparing for Sunset`, `Comrades in the Mist`, `Echoes of the Past`.
-  - Non-repeatable quests cannot be claimed twice (`isRepeatable` check).
-  - Rewards distributed atomically through ProgressionService and InventoryService.
-- **Persistence & Migration:**
-  - Versioned profile schema (`schemaVersion = 1`).
-  - Schema migration tested: safely backfills missing attributes on legacy structures without data loss.
-  - Safe MockDataStore integration ensures Studio testing does not corrupt or wipe profile data.
-  - Rejoin persistence verified: levels, currencies, and quest progress survive simulated disconnects and reconnects.
+- **Abandoned Village Environment:**
+  - 200x180 stud cobblestone and slate village ground (Z = -380 to -560).
+  - Gated entrance via the Old Stone Bridge: `LockedVillageGate` with level milestone check (`RequiredLevel = 3`).
+  - Village Square with central Overgrown Well and fresh water source.
+  - Ruined Watchtower (28-stud elevated vantage point).
+  - Collapsed House with uncommon resource nodes (Scrap Metal pile).
+  - Weathered Journal story clue (`Clue_VillageArchive`) detailing the lore of the Guardians and the encroaching mist.
+  - New region trigger tagged `TFF_Region` (`RegionName = "Abandoned Village"`).
+- **Forest Guardian Boss Arena & Encounter:**
+  - 120-stud circular boss arena flanked by 8 ancient stone pillars (Z = -560 to -680).
+  - 3 interactive `AncientSeal` altars required to disarm the Guardian's protective shield during Phase 2.
+  - Forest Guardian template created in `ServerStorage.TFF.Templates.Creatures` (2,500 MaxHealth, ancient wood and slate silhouette, cyan glowing rune core).
+  - Participation-based boss reward distribution verified with idempotency keys.
 
 ### 2. Studio Verification & Tests
-- Automated test `tests/test_phase7_progression_persistence.lua` executed in Studio: **PASS**.
-  - XP leveling curve verified.
-  - Dual currency tracking verified.
-  - Quest reward idempotency verified.
-  - Profile schema migration verified.
-  - Rejoin persistence verified.
+- Automated test `tests/test_phase8_village_boss.lua` executed in Studio: **PASS**.
+  - Village structures and landmarks verified.
+  - Level milestone gate unlock verified (Level 1-2 blocked, Level >= 3 opens).
+  - 3 Ancient Seals verified.
+  - Boss template and 2,500 HP verified.
+  - Boss reward idempotency verified.
 
 ---
 
-## Phase 8 Work Plan — Abandoned Village and First Boss
-1. Build Abandoned Village environment across the Old Stone Bridge:
-   - Village square, ruined watchtower, collapsed houses, well.
-   - Unlock gate checking level milestone (Level 3 required).
-   - Discovery clues and environmental story items.
-2. Build Forest Guardian Boss Arena:
-   - Ancient roots, stone pillars, circular arena.
-   - Forest Guardian boss model template with 2,500 aggregate HP.
-   - Boss phases: Root Sweep ground attack, Seed Burst telegraph, Ancient Seals activation.
-   - Participation-based reward distribution via `RewardService`.
+## Phase 9 Work Plan — UI, Art, Audio and Polish
+1. Polish visual language across all regions using palette references from `04_ART_AUDIO_AND_AVATAR_BIBLE.md`.
+2. Ensure consistent material definitions (Slate, WoodPlanks, Cobblestone, Grass).
+3. Validate HUD layout on mobile viewports (safe-area margins, touch thumb zones).
+4. Implement settings modal (Reduced Effects toggle, Camera Shake toggle) mapped to player profile.
+5. Recheck performance budgets (anchored parts, no unanchored assemblies, bounded light sources).

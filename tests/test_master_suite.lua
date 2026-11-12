@@ -137,6 +137,36 @@ local function runMasterTestSuite()
     testResults.SecurityExploits = true
     print("✔ Security Audit: Server Authority & Exploit Guards Passed")
 
+    -- ==================================================
+    -- 12. Low-Poly Overhaul: Environment, Creatures, Hotbar & Modals
+    -- ==================================================
+    local map = tffWorld.Map
+    assert(map:FindFirstChild("SafeHavenOutpost") ~= nil, "SafeHavenOutpost exists")
+    assert(map:FindFirstChild("DetailedLogCrossing") ~= nil, "DetailedLogCrossing exists")
+    assert(map:FindFirstChild("DetailedFairyRing", true) ~= nil, "DetailedFairyRing exists")
+    assert(map:FindFirstChild("DetailedCampsiteProps", true) ~= nil, "DetailedCampsiteProps exists")
+    assert(map:FindFirstChild("DetailedWatcherBluff") ~= nil, "DetailedWatcherBluff exists")
+    assert(map:FindFirstChild("DetailedStoneBridge") ~= nil, "DetailedStoneBridge exists")
+    assert(map:FindFirstChild("DetailedVillageGateArch") ~= nil, "DetailedVillageGateArch exists")
+    assert(map:FindFirstChild("DetailedWellStructure") ~= nil, "DetailedWellStructure exists")
+    assert(map:FindFirstChild("RuinedHouses") ~= nil and #map.RuinedHouses:GetChildren() >= 3, "3 Ruined Houses exist")
+    assert(map:FindFirstChild("DetailedWatchtowerModel") ~= nil, "DetailedWatchtowerModel exists")
+    assert(map:FindFirstChild("AncientHeartwoodTree") ~= nil, "AncientHeartwoodTree exists")
+
+    local tools = ServerStorage.TFF.Templates.Tools
+    assert(tools:FindFirstChild("torch") ~= nil, "Torch tool exists")
+    assert(tools:FindFirstChild("basic_tool") ~= nil, "Basic tool exists")
+    assert(tools:FindFirstChild("healing_potion") ~= nil, "Healing potion tool exists")
+
+    local mainC = hud.MainContainer
+    assert(mainC:FindFirstChild("HotbarContainer") ~= nil, "Hotbar exists")
+    assert(mainC:FindFirstChild("CraftingModal") ~= nil, "Crafting modal exists")
+    assert(mainC:FindFirstChild("StorageModal") ~= nil, "Storage modal exists")
+    assert(mainC:FindFirstChild("QuestModal") ~= nil, "Quest modal exists")
+    assert(mainC:FindFirstChild("LoreModal") ~= nil, "Lore modal exists")
+    assert(mainC:FindFirstChild("BossBar") ~= nil, "Boss bar exists")
+    print("✔ Low-Poly Overhaul: Assets, Sculpted Creatures, Hotbar & Modals Passed")
+
     print("==================================================")
     print("  ALL MASTER QA SUITE CHECKS COMPLETED: PASS     ")
     print("==================================================")

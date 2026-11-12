@@ -16,6 +16,8 @@ RemoteRegistry.Events = {
     RequestDepositStorage = "RequestDepositStorage",
     RequestWithdrawStorage = "RequestWithdrawStorage",
     RequestClaimQuest = "RequestClaimQuest",
+    RequestEquipItem = "RequestEquipItem",
+    RequestUseItem = "RequestUseItem",
 
     -- Server to Client Notifications & State Sync
     SyncProfile = "SyncProfile",
@@ -25,6 +27,7 @@ RemoteRegistry.Events = {
     DownedStateChanged = "DownedStateChanged",
     SharedStorageUpdated = "SharedStorageUpdated",
     QuestUpdated = "QuestUpdated",
+    BossHealthUpdated = "BossHealthUpdated",
 }
 
 RemoteRegistry.Functions = {

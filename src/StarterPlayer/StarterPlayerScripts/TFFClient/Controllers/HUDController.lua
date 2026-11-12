@@ -20,6 +20,16 @@ HUDController.__index = HUDController
 local _player = Players.LocalPlayer
 local _screenGui: ScreenGui? = nil
 local _currentRegionName = "Safe Haven"
+local _selectedSlot: number? = nil
+local _cachedInventory: { [number]: { ItemId: string, Quantity: number } } = {}
+
+-- Modals references
+local _craftingModal: Frame? = nil
+local _storageModal: Frame? = nil
+local _questModal: Frame? = nil
+local _loreModal: Frame? = nil
+local _bossBar: Frame? = nil
+local _hotbarContainer: Frame? = nil
 
 -- Settings state
 local _reducedEffects = false
@@ -91,6 +101,129 @@ function HUDController.Start()
         camShakeBtn.Text = "Camera Shake: " .. (_cameraShake and "ON" or "OFF")
         camShakeBtn.TextColor3 = _cameraShake and Color3.fromRGB(120, 230, 150) or Color3.fromRGB(230, 230, 220)
     end)
+
+    -- Gameplay Modals & Hotbar references
+    _craftingModal = mainContainer:FindFirstChild("CraftingModal") :: Frame?
+    _storageModal = mainContainer:FindFirstChild("StorageModal") :: Frame?
+    _questModal = mainContainer:FindFirstChild("QuestModal") :: Frame?
+    _loreModal = mainContainer:FindFirstChild("LoreModal") :: Frame?
+    _bossBar = mainContainer:FindFirstChild("BossBar") :: Frame?
+    _hotbarContainer = mainContainer:FindFirstChild("HotbarContainer") :: Frame?
+
+    -- Modal Close Buttons
+    local function hookModalClose(modal: Frame?)
+        if not modal then return end
+        local close = modal:FindFirstChild("CloseButton") :: TextButton?
+        if close then
+            close.MouseButton1Click:Connect(function()
+                modal.Visible = false
+            end)
+        end
+    end
+    hookModalClose(_craftingModal)
+    hookModalClose(_storageModal)
+    hookModalClose(_questModal)
+    hookModalClose(_loreModal)
+
+    -- Wire up Crafting Buttons
+    if _craftingModal then
+        local recipeList = _craftingModal:FindFirstChild("RecipeList") :: ScrollingFrame?
+        if recipeList then
+            for _, card in ipairs(recipeList:GetChildren()) do
+                if card:IsA("Frame") and card.Name:sub(1, 5) == "Card_" then
+                    local recipeId = card.Name:sub(6)
+                    local craftBtn = card:FindFirstChild("CraftButton") :: TextButton?
+                    if craftBtn then
+                        craftBtn.MouseButton1Click:Connect(function()
+                            local craftRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestCraft)
+                            if craftRemote then
+                                craftRemote:FireServer(recipeId)
+                            end
+                        end)
+                    end
+                end
+            end
+        end
+    end
+
+    -- Wire up Hotbar Slots
+    local function refreshHotbarUI()
+        if not _hotbarContainer then return end
+        local ItemDefinitions = require(ReplicatedStorage.TFF.Shared.Definitions.ItemDefinitions)
+        for i = 1, 5 do
+            local slotBtn = _hotbarContainer:FindFirstChild("Slot_" .. i) :: TextButton?
+            if slotBtn then
+                local itemData = _cachedInventory[i]
+                local nameLabel = slotBtn:FindFirstChild("ItemName") :: TextLabel?
+                local countLabel = slotBtn:FindFirstChild("ItemCount") :: TextLabel?
+                local stroke = slotBtn:FindFirstChild("SelectionStroke") :: UIStroke?
+
+                if itemData and itemData.Quantity > 0 then
+                    local def = ItemDefinitions[itemData.ItemId]
+                    if nameLabel then nameLabel.Text = def and def.DisplayName or itemData.ItemId end
+                    if countLabel then countLabel.Text = tostring(itemData.Quantity) end
+                else
+                    if nameLabel then nameLabel.Text = "Empty" end
+                    if countLabel then countLabel.Text = "" end
+                end
+
+                if stroke then
+                    if _selectedSlot == i then
+                        stroke.Color = Color3.fromRGB(255, 215, 80)
+                        stroke.Thickness = 2.5
+                    else
+                        stroke.Color = Color3.fromRGB(60, 62, 68)
+                        stroke.Thickness = 1.2
+                    end
+                end
+            end
+        end
+    end
+
+    if _hotbarContainer then
+        for i = 1, 5 do
+            local slotBtn = _hotbarContainer:FindFirstChild("Slot_" .. i) :: TextButton?
+            if slotBtn then
+                slotBtn.MouseButton1Click:Connect(function()
+                    HUDController.SelectHotbarSlot(i)
+                end)
+            end
+        end
+    end
+
+    -- Sync Profile & Inventory
+    local syncProfileRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncProfile)
+    if syncProfileRemote then
+        syncProfileRemote.OnClientEvent:Connect(function(profile: any)
+            if profile and profile.inventory then
+                _cachedInventory = profile.inventory
+                refreshHotbarUI()
+            end
+        end)
+    end
+
+    -- Hook up Boss Health Sync
+    local bossRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.BossHealthUpdated)
+    if bossRemote then
+        bossRemote.OnClientEvent:Connect(function(currentHp: number, maxHp: number, phaseName: string?)
+            if _bossBar then
+                if currentHp > 0 then
+                    _bossBar.Visible = true
+                    local hpFill = _bossBar:FindFirstChild("HpBackground") and _bossBar.HpBackground:FindFirstChild("HpFill") :: Frame?
+                    if hpFill then
+                        local ratio = math.clamp(currentHp / maxHp, 0, 1)
+                        hpFill.Size = UDim2.new(ratio, 0, 1, 0)
+                    end
+                    local title = _bossBar:FindFirstChild("BossTitle") :: TextLabel?
+                    if title and phaseName then
+                        title.Text = "FOREST GUARDIAN — " .. string.upper(phaseName)
+                    end
+                else
+                    _bossBar.Visible = false
+                end
+            end
+        end)
+    end
 
     -- Mobile sprint wiring
     if not UserInputService.TouchEnabled then
@@ -194,6 +327,66 @@ end
 
 function HUDController.IsCameraShakeEnabled(): boolean
     return _cameraShake
+end
+
+function HUDController.SelectHotbarSlot(slotIndex: number)
+    local equipRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestEquipItem)
+    if _selectedSlot == slotIndex then
+        _selectedSlot = nil
+        if equipRemote then
+            equipRemote:FireServer(slotIndex) -- toggles unequip
+        end
+    else
+        _selectedSlot = slotIndex
+        if equipRemote then
+            equipRemote:FireServer(slotIndex)
+        end
+    end
+
+    if _hotbarContainer then
+        for i = 1, 5 do
+            local slotBtn = _hotbarContainer:FindFirstChild("Slot_" .. i) :: TextButton?
+            local stroke = slotBtn and slotBtn:FindFirstChild("SelectionStroke") :: UIStroke?
+            if stroke then
+                if _selectedSlot == i then
+                    stroke.Color = Color3.fromRGB(255, 215, 80)
+                    stroke.Thickness = 2.5
+                else
+                    stroke.Color = Color3.fromRGB(60, 62, 68)
+                    stroke.Thickness = 1.2
+                end
+            end
+        end
+    end
+end
+
+function HUDController.UseActiveItem()
+    if _selectedSlot then
+        local useRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestUseItem)
+        if useRemote then
+            useRemote:FireServer(_selectedSlot)
+        end
+    end
+end
+
+function HUDController.OpenModal(modalName: string)
+    HUDController.CloseAllModals()
+    if modalName == "Crafting" and _craftingModal then
+        _craftingModal.Visible = true
+    elseif modalName == "Storage" and _storageModal then
+        _storageModal.Visible = true
+    elseif modalName == "Quest" and _questModal then
+        _questModal.Visible = true
+    elseif modalName == "Lore" and _loreModal then
+        _loreModal.Visible = true
+    end
+end
+
+function HUDController.CloseAllModals()
+    if _craftingModal then _craftingModal.Visible = false end
+    if _storageModal then _storageModal.Visible = false end
+    if _questModal then _questModal.Visible = false end
+    if _loreModal then _loreModal.Visible = false end
 end
 
 return HUDController

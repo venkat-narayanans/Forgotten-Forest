@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026-11-12 — Perfect Low-Poly Edition
+
+### Added
+- **Step 1 Atmosphere & Lighting Overhaul:** Atmosphere density 0.35 with teal haze, Bloom 0.65 threshold, ColorCorrection cinematic contrast/saturation tuning, and SunRays god-rays.
+- **Step 2 Safe Haven Outpost Overhaul:** The Grand Hearth (stone ring, ash pit, teepee logs, embers, curved timber benches); The Smithy & Crafting Shed (timber post-and-beam frame, pitched wood roof, oak workbench, anvil, tool rack, lantern); The Supply Warehouse (timber canopy, iron-banded communal chest, stacked supply crates, oak barrels); The Expedition Quest Pavilion (timber roof, notice board, pinned parchment notices); Explorer Cabins/Tents (cream canvas tents with entrance cutouts); Perimeter split-rail fences and stone trailhead gateposts.
+- **Step 3 Whispering Woods Low-Poly Detail Overhaul:** 28 multi-part stylized trees (Tiered Fir/Pine evergreens, gnarled Ancient Oaks with root buttresses, Slender Silver/Mossy Birch trees with bark rings); authentic hollow moss-covered log bridge crossing the creek ravine with shelf mushrooms; glowing fairy-ring mushroom clearing with 12 luminescent neon mushrooms and spore particle emitters; abandoned campsite expedition wagon with broken wooden spoked wheels, spilled crates, and sacks; Watcher's Bluff rustic timber observation deck with post-and-rope railings and ancient stone cairn; 116 scattered wild ferns, river stones, and floating firefly nodes.
+- **Step 4 Abandoned Village & Old Stone Bridge Overhaul:** Arched Old Stone Bridge with heavy stone piers, cobblestone parapets, 4 iron streetlamps with warm lights, and climbing ivy; Fortified Village Gate with guard pillars, stone lintel, and glowing runic sigil; Village Square Well with stone coping, timber A-frame winch, rope, and bucket; 3 detailed ruined houses (Town Archive/Apothecary with stone chimney/fireplace and readable lore desk; Blacksmith workshop with forge embers and anvil; Residential cottage with fieldstone walls and hinged door); 3-tier Ruined Watchtower with battlements and signal fire brazier.
+- **Step 5 Forest Guardian Boss Arena Overhaul:** Colossal Ancient Heartwood Tree (55 studs high, 22 studs thick, sprawling root spurs, hollow chest with pulsing crystal heart); 8 Ancient Pillars upgraded with basalt plinths, capital stones, inlaid glowing cyan vertical runes, and floating energy motes; 3 Ancient Seals upgraded into ornate stone altars with vertical glowing light pillars; 16 perimeter slate boulders and ground mist emitters.
+- **Step 6 Sculpted Low-Poly Creatures:**
+  - *The Stalker:* 19-part quadruped shadow predator with arched muscular torso, spine quills, clawed legs, sharp skull with glowing red ember eyes (`Neon`), lower jaw, and windup telegraph light.
+  - *The Watcher:* 8-part tall entity with draped black robe silhouette, skeletal arms, bone mask, and glowing celestial third eye.
+  - *The Mimic:* 21-part disguised wooden chest with bronze banding, hinged lid (35° angle), fanged wooden teeth, glowing purple interior maw with light, and root legs.
+  - *Forest Guardian Boss:* 17-part colossal 18-stud treant golem with bark torso, mossy basalt pauldrons, massive fists, cylinder legs, carved head with antler horns, glowing mask eyes, and pulsing crystal heart core.
+- **Step 7 Wieldable Tools & Hotbar System:** 5-slot Hotbar GUI at bottom-center of screen with keybindings 1-5, selection highlight stroke, and live item counts; 5 physical tool templates in `ServerStorage.TFF.Templates.Tools` (`torch`, `basic_tool`, `healing_potion`, `basic_trap`, `advanced_lantern`); server-authoritative equipping and consumable usage (`RequestEquipItem`, `RequestUseItem`).
+- **Step 8 Interactive Gameplay Modals & Polish:** Interactive Workbench Crafting Modal with recipe cards and Craft button; Communal Storage Chest Modal; Expedition Notice Board Quest Modal; Ancient Lore Parchment Reader Modal; Boss Health Bar displaying Forest Guardian HP and phase status.
+- **Step 9 Master QA Regression Verification:** All 12 test sections in `test_master_suite.lua` passing 100% in Studio; live simulation playtest confirmed 0 errors, 0 warnings.
+
 ## [1.0.0-rc1] - 2026-11-12
 
 ### Added

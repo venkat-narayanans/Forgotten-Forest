@@ -17,6 +17,7 @@ local InventoryService = {}
 InventoryService.__index = InventoryService
 
 local _profileService: any = nil
+local _survivalService: any = nil
 local _sharedStorage: { [string]: number } = {}
 
 local function syncProfileToClient(player: Player)
@@ -38,6 +39,7 @@ end
 function InventoryService.Init(dependencies: { [string]: any })
     print("[InventoryService] Initializing InventoryService...")
     _profileService = dependencies.ProfileService
+    _survivalService = dependencies.SurvivalService
 
     -- Connect storage remotes
     local depositRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestDepositStorage)
@@ -51,6 +53,21 @@ function InventoryService.Init(dependencies: { [string]: any })
     if withdrawRemote then
         withdrawRemote.OnServerEvent:Connect(function(player: Player, itemId: string, quantity: number)
             InventoryService.TryWithdrawFromSharedStorage(player, itemId, quantity)
+        end)
+    end
+
+    -- Connect tool equipping & consumption remotes
+    local equipRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestEquipItem)
+    if equipRemote then
+        equipRemote.OnServerEvent:Connect(function(player: Player, slotIndex: number)
+            InventoryService.EquipItem(player, slotIndex)
+        end)
+    end
+
+    local useRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestUseItem)
+    if useRemote then
+        useRemote.OnServerEvent:Connect(function(player: Player, slotIndex: number)
+            InventoryService.UseItem(player, slotIndex)
         end)
     end
 end
@@ -172,6 +189,54 @@ function InventoryService.TryWithdrawFromSharedStorage(player: Player, itemId: s
         end
         broadcastSharedStorage()
         return true
+    end
+    return false
+end
+
+function InventoryService.EquipItem(player: Player, slotIndex: number): boolean
+    local profile = _profileService.GetProfile(player)
+    if not profile or not profile.inventory then return false end
+    local slot = profile.inventory[slotIndex]
+    if not slot then return false end
+
+    local char = player.Character
+    if not char then return false end
+
+    -- Check if already holding this tool
+    local currentTool = char:FindFirstChildWhichIsA("Tool")
+    if currentTool and currentTool.Name == slot.ItemId then
+        currentTool:Destroy()
+        return true
+    elseif currentTool then
+        currentTool:Destroy()
+    end
+
+    -- Clone tool from ServerStorage.TFF.Templates.Tools
+    local ServerStorage = game:GetService("ServerStorage")
+    local tff = ServerStorage:FindFirstChild("TFF")
+    local templates = tff and tff:FindFirstChild("Templates")
+    local tools = templates and templates:FindFirstChild("Tools")
+    local toolTemplate = tools and tools:FindFirstChild(slot.ItemId) :: Tool?
+    if toolTemplate then
+        local equippedTool = toolTemplate:Clone()
+        equippedTool.Parent = char
+        return true
+    end
+    return false
+end
+
+function InventoryService.UseItem(player: Player, slotIndex: number): boolean
+    local profile = _profileService.GetProfile(player)
+    if not profile or not profile.inventory then return false end
+    local slot = profile.inventory[slotIndex]
+    if not slot or slot.Quantity <= 0 then return false end
+
+    if slot.ItemId == "healing_potion" and _survivalService then
+        local healed = _survivalService.HealHealth(player, 40)
+        if healed then
+            InventoryService.TryRemoveItem(player, "healing_potion", 1)
+            return true
+        end
     end
     return false
 end

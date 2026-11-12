@@ -227,6 +227,19 @@ function SurvivalService.ApplyDamage(player: Player, amount: number)
     syncStatsToClient(player)
 end
 
+function SurvivalService.HealHealth(player: Player, amount: number): boolean
+    local stats = _playerStats[player.UserId]
+    local char = player.Character
+    local humanoid = char and char:FindFirstChild("Humanoid") :: Humanoid?
+    if not stats or not humanoid or stats.IsDowned then return false end
+    if stats.Health >= stats.MaxHealth then return false end
+
+    stats.Health = math.min(stats.MaxHealth, stats.Health + amount)
+    humanoid.Health = stats.Health
+    syncStatsToClient(player)
+    return true
+end
+
 function SurvivalService.StartRevive(reviver: Player, targetUserId: number): boolean
     local reviverStats = _playerStats[reviver.UserId]
     local targetStats = _playerStats[targetUserId]

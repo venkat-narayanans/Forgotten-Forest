@@ -2,7 +2,10 @@
 --[[
     HUDController.lua
     Client controller for managing HUD updates, status bars, cycle phase,
-    region banners, mobile touch sprint input, warmth/sanity meters, and Accessibility Settings modal.
+    region banners, mobile touch sprint input, warmth/sanity meters,
+    Interactive Valley Map (Key 'M'), Dialogue Modal, Floating Damage text,
+    and Accessibility Settings modal.
+    Fulfills Master Game Specification Sections 3.5, 4, 6.2, 8, 9.
 ]]
 
 local Players = game:GetService("Players")
@@ -28,8 +31,11 @@ local _craftingModal: Frame? = nil
 local _storageModal: Frame? = nil
 local _questModal: Frame? = nil
 local _loreModal: Frame? = nil
+local _mapModal: Frame? = nil
+local _dialogueModal: Frame? = nil
 local _bossBar: Frame? = nil
 local _hotbarContainer: Frame? = nil
+local _regionBanner: TextLabel? = nil
 
 -- Settings state
 local _reducedEffects = false
@@ -42,7 +48,7 @@ local function formatTimer(seconds: number): string
 end
 
 function HUDController.Init(_dependencies: { [string]: any })
-    print("[HUDController] Initializing HUDController...")
+    print("[HUDController] Initializing HUDController v2.0...")
 end
 
 function HUDController.Start()
@@ -72,7 +78,7 @@ function HUDController.Start()
     local phaseLabel = cycleIndicator:WaitForChild("PhaseLabel") :: TextLabel
     local timerLabel = cycleIndicator:WaitForChild("TimerLabel") :: TextLabel
 
-    local regionBanner = mainContainer:WaitForChild("RegionBanner") :: TextLabel
+    _regionBanner = mainContainer:WaitForChild("RegionBanner") :: TextLabel
     local mobileSprint = mainContainer:WaitForChild("MobileSprintButton") :: TextButton
 
     -- Settings Modal Wiring
@@ -107,6 +113,8 @@ function HUDController.Start()
     _storageModal = mainContainer:FindFirstChild("StorageModal") :: Frame?
     _questModal = mainContainer:FindFirstChild("QuestModal") :: Frame?
     _loreModal = mainContainer:FindFirstChild("LoreModal") :: Frame?
+    _mapModal = mainContainer:FindFirstChild("MapModal") :: Frame?
+    _dialogueModal = mainContainer:FindFirstChild("DialogueModal") :: Frame?
     _bossBar = mainContainer:FindFirstChild("BossBar") :: Frame?
     _hotbarContainer = mainContainer:FindFirstChild("HotbarContainer") :: Frame?
 
@@ -124,6 +132,16 @@ function HUDController.Start()
     hookModalClose(_storageModal)
     hookModalClose(_questModal)
     hookModalClose(_loreModal)
+    hookModalClose(_mapModal)
+    hookModalClose(_dialogueModal)
+
+    -- Map Button Wiring
+    local mapBtn = mainContainer:FindFirstChild("MapButton") :: TextButton?
+    if mapBtn then
+        mapBtn.MouseButton1Click:Connect(function()
+            HUDController.ToggleMapModal()
+        end)
+    end
 
     -- Wire up Crafting Buttons
     if _craftingModal then
@@ -280,19 +298,51 @@ function HUDController.Start()
     local downedRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.DownedStateChanged)
     if downedRemote then
         downedRemote.OnClientEvent:Connect(function(userId: number, isDowned: boolean, duration: number)
-            if userId == _player.UserId then
+            if userId == _player.UserId and _regionBanner then
                 if isDowned then
-                    regionBanner.Text = "YOU ARE DOWNED! HOLD OUT FOR REVIVAL..."
-                    regionBanner.TextColor3 = Color3.fromRGB(255, 80, 80)
+                    _regionBanner.Text = "YOU ARE DOWNED! HOLD OUT FOR REVIVAL..."
+                    _regionBanner.TextColor3 = Color3.fromRGB(255, 80, 80)
                 else
-                    regionBanner.Text = _currentRegionName
-                    regionBanner.TextColor3 = Color3.fromRGB(235, 225, 205)
+                    _regionBanner.Text = _currentRegionName
+                    _regionBanner.TextColor3 = Color3.fromRGB(235, 225, 205)
                 end
             end
         end)
     end
 
-    -- Region detection loop
+    -- Hook Combat Hit Feedback (Floating Damage Numbers & Sparks)
+    local hitRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.CombatHitFeedback)
+    if hitRemote then
+        hitRemote.OnClientEvent:Connect(function(hitPos: Vector3, damage: number, isCrit: boolean, hitType: string, targetName: string)
+            HUDController.SpawnFloatingCombatText(hitPos, damage, isCrit, hitType)
+        end)
+    end
+
+    -- Hook Dynamic Weather Notifications
+    local weatherRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncWeather)
+    if weatherRemote then
+        weatherRemote.OnClientEvent:Connect(function(weatherName: string, warmthMult: number, fogDensity: number, desc: string)
+            HUDController.ShowBannerNotification("WEATHER SHIFT: " .. string.upper(weatherName), desc)
+        end)
+    end
+
+    -- Hook World Event Announcements
+    local eventRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.WorldEventTriggered)
+    if eventRemote then
+        eventRemote.OnClientEvent:Connect(function(title: string, desc: string, duration: number)
+            HUDController.ShowBannerNotification("WORLD EVENT: " .. string.upper(title), desc)
+        end)
+    end
+
+    -- Hook Dialogue & Clue Sync
+    local dialogRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncDialog)
+    if dialogRemote then
+        dialogRemote.OnClientEvent:Connect(function(mode: string, data: any)
+            HUDController.OpenDialogueModal(mode, data)
+        end)
+    end
+
+    -- Region detection loop (Updated for 3,370 stud Grand Valley)
     task.spawn(function()
         while true do
             task.wait(1)
@@ -301,20 +351,34 @@ function HUDController.Start()
             if root then
                 local pos = root.Position
                 local detected = "Safe Haven"
-                if pos.Z < -370 then
+
+                if pos.Z <= -2400 then
+                    detected = "Ancient Grounds"
+                elseif pos.Z <= -1800 then
+                    detected = "Crystal Caverns"
+                elseif pos.Z <= -1150 then
                     detected = "Abandoned Village"
-                elseif pos.Z < -80 then
+                elseif pos.Z <= -250 then
                     detected = "Whispering Woods"
+                else
+                    detected = "Safe Haven"
                 end
 
                 if detected ~= _currentRegionName then
                     _currentRegionName = detected
-                    regionBanner.Text = string.upper(detected)
-                    regionBanner.TextTransparency = 0
-                    local tween = TweenService:Create(regionBanner, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                        TextTransparency = 0.2
-                    })
-                    tween:Play()
+                    if _regionBanner then
+                        _regionBanner.Text = string.upper(detected)
+                        _regionBanner.TextTransparency = 0
+                        local tween = TweenService:Create(_regionBanner, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                            TextTransparency = 0.2
+                        })
+                        tween:Play()
+                    end
+                end
+
+                -- If Map Modal is open, update player marker
+                if _mapModal and _mapModal.Visible then
+                    HUDController.UpdateMapDisplay()
                 end
             end
         end
@@ -334,7 +398,7 @@ function HUDController.SelectHotbarSlot(slotIndex: number)
     if _selectedSlot == slotIndex then
         _selectedSlot = nil
         if equipRemote then
-            equipRemote:FireServer(slotIndex) -- toggles unequip
+            equipRemote:FireServer(slotIndex)
         end
     else
         _selectedSlot = slotIndex
@@ -379,6 +443,172 @@ function HUDController.OpenModal(modalName: string)
         _questModal.Visible = true
     elseif modalName == "Lore" and _loreModal then
         _loreModal.Visible = true
+    elseif modalName == "Map" and _mapModal then
+        _mapModal.Visible = true
+        HUDController.UpdateMapDisplay()
+    end
+end
+
+function HUDController.ToggleMapModal()
+    if _mapModal then
+        local willBeVisible = not _mapModal.Visible
+        HUDController.CloseAllModals()
+        _mapModal.Visible = willBeVisible
+        if willBeVisible then
+            HUDController.UpdateMapDisplay()
+        end
+    end
+end
+
+function HUDController.UpdateMapDisplay()
+    if not _mapModal or not _mapModal.Visible then return end
+    local char = _player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+    if not root then return end
+
+    local pos = root.Position
+    local canvas = _mapModal:FindFirstChild("MapCanvas") :: Frame?
+    local marker = canvas and canvas:FindFirstChild("PlayerMarker") :: Frame?
+    local sidebar = _mapModal:FindFirstChild("Sidebar") :: Frame?
+    local coordLbl = sidebar and sidebar:FindFirstChild("CoordinatesLabel") :: TextLabel?
+
+    if coordLbl then
+        coordLbl.Text = string.format("POS: X: %d | Z: %d\nREGION: %s", math.floor(pos.X), math.floor(pos.Z), _currentRegionName)
+    end
+
+    if marker and canvas then
+        -- Normalize coordinates into canvas [0, 1] range
+        -- X bounds: -350 to +350 (span 700)
+        -- Z bounds: +100 to -3150 (span 3250)
+        local normX = math.clamp((pos.X + 350) / 700, 0.05, 0.95)
+        local normY = math.clamp((100 - pos.Z) / 3250, 0.02, 0.98) -- +100 is bottom (Y=1.0), -3150 is top (Y=0.0)
+        marker.Position = UDim2.new(normX, 0, 1.0 - normY, 0)
+    end
+end
+
+function HUDController.OpenDialogueModal(mode: string, data: any)
+    if not _dialogueModal then return end
+    HUDController.CloseAllModals()
+    _dialogueModal.Visible = true
+
+    local nameLbl = _dialogueModal:FindFirstChild("NPCNameLabel") :: TextLabel?
+    local textLbl = _dialogueModal:FindFirstChild("DialogueText") :: TextLabel?
+    local topicCont = _dialogueModal:FindFirstChild("TopicContainer") :: Frame?
+
+    if mode == "NPC" and data then
+        if nameLbl then nameLbl.Text = string.format("%s — <%s>", data.DisplayName, data.Title) end
+        if textLbl then textLbl.Text = data.Greeting end
+
+        if topicCont then
+            for _, c in ipairs(topicCont:GetChildren()) do
+                if c:IsA("TextButton") then c:Destroy() end
+            end
+            local xOffset = 0
+            if data.Topics then
+                for _, topicData in pairs(data.Topics) do
+                    local tBtn = Instance.new("TextButton")
+                    tBtn.Size = UDim2.new(0, 190, 0, 36)
+                    tBtn.Position = UDim2.new(0, xOffset, 0, 5)
+                    tBtn.BackgroundColor3 = Color3.fromRGB(50, 65, 85)
+                    tBtn.Text = topicData.prompt
+                    tBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
+                    tBtn.Font = Enum.Font.GothamMedium
+                    tBtn.TextSize = 11
+                    local crn = Instance.new("UICorner")
+                    crn.CornerRadius = UDim.new(0, 4)
+                    crn.Parent = tBtn
+
+                    tBtn.MouseButton1Click:Connect(function()
+                        if textLbl then textLbl.Text = topicData.response end
+                    end)
+                    tBtn.Parent = topicCont
+                    xOffset = xOffset + 200
+                end
+            end
+        end
+    elseif mode == "Clue" and data then
+        if nameLbl then nameLbl.Text = string.format("[EXPEDITION RECORD] %s (%s)", data.Title, data.Region) end
+        if textLbl then textLbl.Text = string.format("\"%s\"\n\n— %s", data.Body, data.Author) end
+        if topicCont then
+            for _, c in ipairs(topicCont:GetChildren()) do
+                if c:IsA("TextButton") then c:Destroy() end
+            end
+        end
+    end
+end
+
+function HUDController.SpawnFloatingCombatText(pos: Vector3, damage: number, isCrit: boolean, hitType: string)
+    if _reducedEffects and hitType == "miss" then return end
+
+    local bb = Instance.new("BillboardGui")
+    bb.Name = "FloatingDamage"
+    bb.Size = UDim2.new(0, 140, 0, 44)
+    bb.StudsOffset = Vector3.new(0, 2.5, 0)
+    bb.AlwaysOnTop = true
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextStrokeTransparency = 0.2
+    lbl.Parent = bb
+
+    if hitType == "hit" then
+        lbl.Text = tostring(damage) .. (isCrit and "!" or "")
+        lbl.TextColor3 = isCrit and Color3.fromRGB(255, 120, 40) or Color3.fromRGB(255, 230, 80)
+        lbl.TextSize = isCrit and 24 or 18
+    elseif hitType == "blocked" then
+        lbl.Text = "BLOCKED"
+        lbl.TextColor3 = Color3.fromRGB(180, 190, 200)
+        lbl.TextSize = 15
+    elseif hitType == "resource" then
+        lbl.Text = "+HARVEST"
+        lbl.TextColor3 = Color3.fromRGB(120, 240, 140)
+        lbl.TextSize = 16
+    else
+        lbl.Text = "MISS"
+        lbl.TextColor3 = Color3.fromRGB(160, 160, 160)
+        lbl.TextSize = 14
+    end
+
+    local anchor = Instance.new("Part")
+    anchor.Size = Vector3.new(0.5, 0.5, 0.5)
+    anchor.CFrame = CFrame.new(pos)
+    anchor.Transparency = 1
+    anchor.CanCollide = false
+    anchor.Anchored = true
+    bb.Adornee = anchor
+
+    anchor.Parent = Workspace
+    bb.Parent = Workspace
+
+    local tween = TweenService:Create(bb, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        StudsOffset = Vector3.new(0, 5.0, 0)
+    })
+    local fadeTween = TweenService:Create(lbl, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        TextTransparency = 1,
+        TextStrokeTransparency = 1
+    })
+    tween:Play()
+    fadeTween:Play()
+
+    task.delay(1.2, function()
+        bb:Destroy()
+        anchor:Destroy()
+    end)
+end
+
+function HUDController.ShowBannerNotification(title: string, message: string)
+    if _regionBanner then
+        _regionBanner.Text = title .. "\n" .. message
+        _regionBanner.TextColor3 = Color3.fromRGB(255, 230, 140)
+        _regionBanner.TextTransparency = 0
+        task.delay(6, function()
+            if _regionBanner and _regionBanner.Text:find(title) then
+                _regionBanner.Text = _currentRegionName
+                _regionBanner.TextColor3 = Color3.fromRGB(235, 225, 205)
+            end
+        end)
     end
 end
 
@@ -387,6 +617,8 @@ function HUDController.CloseAllModals()
     if _storageModal then _storageModal.Visible = false end
     if _questModal then _questModal.Visible = false end
     if _loreModal then _loreModal.Visible = false end
+    if _mapModal then _mapModal.Visible = false end
+    if _dialogueModal then _dialogueModal.Visible = false end
 end
 
 return HUDController

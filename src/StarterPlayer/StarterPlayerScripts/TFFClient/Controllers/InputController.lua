@@ -106,6 +106,31 @@ function InputController.Start()
         -- Close Modals
         elseif input.KeyCode == Enum.KeyCode.Escape then
             if _hudController then _hudController.CloseAllModals() end
+
+        -- Interactive Map Screen (Key 'M' or Gamepad Select)
+        elseif input.KeyCode == Enum.KeyCode.M or input.KeyCode == Enum.KeyCode.ButtonSelect then
+            if _hudController then _hudController.ToggleMapModal() end
+        end
+
+        -- Weapon Attack / Tool Action (LMB click)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mousePos = UserInputService:GetMouseLocation()
+            local camera = Workspace.CurrentCamera
+            if camera then
+                local ray = camera:ViewportPointToRay(mousePos.X, mousePos.Y)
+                local raycastParams = RaycastParams.new()
+                if _player.Character then
+                    raycastParams.FilterDescendantsInstances = { _player.Character }
+                    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+                end
+                local result = Workspace:Raycast(ray.Origin, ray.Direction * 150, raycastParams)
+                local targetInstance = result and result.Instance
+                local hitPos = result and result.Position
+                local attackRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestAttack)
+                if attackRemote then
+                    attackRemote:FireServer(targetInstance, hitPos, ray.Direction)
+                end
+            end
         end
     end)
 

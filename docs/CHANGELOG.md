@@ -4,6 +4,49 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.0] - 2026-11-13 — The Grand Valley Master Specification Edition
+
+### Added
+- **Grand Continuous Valley World Overhaul (3,370+ studs span):**
+  - Expanded map scale from ~800 studs to 3,370 studs along Z-axis (`Z: +165.0 to -3205.0`, `X: [-430, 430]`, span 860 studs, `Y: [-26.4, 157.9]`, span 184 studs of natural verticality).
+  - 1,186 total anchored parts in `workspace.TFF_World` (100% anchored, 0 unanchored).
+  - Five distinct continuous zones with registered volume triggers in `workspace.TFF_World.Zones`:
+    1. *Safe Haven Hub* (`Z = +100 to -250`): Central beacon structure, medical tent, cartographer table, workbenches, storage chests.
+    2. *Whispering Woods* (`Z = -250 to -1150`): Winding trail, 650-stud creek ravine with log crossing, Split Oak landmark, Silent Pond, Scout Camp, Fairy Mushroom Ring, Watcher's Bluff, 140+ trees & boulders.
+    3. *Abandoned Village* (`Z = -1150 to -1800`): Arched stone bridge, fortified gate, overgrown well square, 48-stud ruined clock tower, 6 ruined buildings (Town Archive, Blacksmith, Cottages 1-3, Keeper Hall).
+    4. *Crystal Caverns* (`Z = -1800 to -2400`): Mountain gorge gateway, subterranean vault, 20 glowing neon giant crystals with point lights, 20 tagged harvestable crystal ore nodes.
+    5. *Ancient Grounds & Boss Arena* (`Z = -2400 to -3150`): Basalt plateau, 220-stud circular stone boss arena, 8 megaliths with teal runic inscriptions, 5 Ancient Seals with plinths and light beams, Colossal Elder Heartwood Tree, pulsing Crystal Heart (`ForestGuardianCrystalHeart`).
+- **Complete Weapons & Combat Pipeline:**
+  - `WeaponDefinitions.lua` data catalog implementing all 7 specification weapons: Field Knife (12 dmg, 0.55s cd), Wooden Spear (18 dmg, 9-stud reach, interrupt capability), Forged Hatchet (20 dmg, wood bonus), Keeper Blade (28 dmg, high stagger), Hunting Bow (22 dmg, ranged physics), Flare Launcher (5 direct dmg, disruption/light), Pickaxe (15 dmg, mining).
+  - 7 physical tool templates in `ServerStorage.TFF.Templates.Tools` (12 total templates).
+  - Server-authoritative combat pipeline in `CombatService.lua`: client attack request validation, server cooldown enforcement, stamina drain via `SurvivalService.DrainStamina`, target reach validation, creature damage, boss core damage, tool effective gathering, and floating combat hit feedback.
+  - Client mouse click/tap attack raycasting binding in `InputController.lua`.
+- **Interactive NPCs & Story Clue Network:**
+  - 3 Interactive low-poly NPC models in `workspace.TFF_World.Interactables`:
+    - *Alden, The Valley Cartographer* (`NPC_cartographer`) at Safe Haven Map Table.
+    - *Mara, Field Medic* (`NPC_medic`) at Safe Haven Medical Tent.
+    - *The Old Keeper* (`NPC_old_keeper`) at Village Clock Tower Undercroft.
+  - 6 Readable Story Clues placed across the valley: `StoryClue_safe_haven_orders`, `StoryClue_scout_journal`, `StoryClue_split_oak_carving`, `StoryClue_village_ledger`, `StoryClue_miner_warning`, `StoryClue_ancient_tablet`.
+  - `StoryDefinitions.lua` catalog containing all dialogue trees, responses, and lore document transcripts.
+  - `DialogueModal` in HUD with interactive topic selection and narrative viewing.
+  - ProximityPrompt server listener in `PlayerService.lua` granting exploration XP on discovery.
+- **Dynamic Weather & World Event Directors:**
+  - `WeatherService.lua`: 5 weather profiles (`Clear`, `Light Rain`, `Heavy Rain`, `Dense Fog`, `Fog Surge`) driving `Lighting.Atmosphere` density (0.28 to 0.92) and warmth/sanity decay multipliers.
+  - `EventService.lua`: Scheduled world events (Fog Surge wall, Strange Signal cache on Watcher's Bluff, Crystal Grotto resonance, Abandoned Caravan supply crate).
+  - Environmental survival dynamics in `SurvivalService.lua`: cold zone warmth decay, hypothermia damage, wilderness sanity decay, campfire and lantern warmth recovery, safe late-join player handling.
+- **Interactive World Map Screen (Key 'M'):**
+  - Full-screen parchment `MapModal` with styled survey canvas, sector boundaries, survey legend, live coordinate telemetry, and real-time normalized player position tracking.
+  - Quick-access Map button in HUD and keyboard ('M') / Gamepad Select bindings in `InputController.lua`.
+- **Multi-Phase Forest Guardian Boss Encounter:**
+  - `BossEncounterService.lua`: 4-phase encounter director:
+    1. *Awakening*: Triggered on arena entry (`Z <= -2665`), runic surge and health sync.
+    2. *Root Sweep*: Telegraphed red warning strips across arena floor with 1.2s dodge window dealing 22 damage.
+    3. *Barrier Phase*: Invulnerability shield requiring all 5 Ancient Seals (`AncientSeal_1`..`5`) to be channeled.
+    4. *Exposed Core*: 30s damage window to strike the pulsing `ForestGuardianCrystalHeart` core inside the Elder Tree.
+    5. *Defeated*: Grants participating players 20 Ancient Tokens, 200 Forest Coins, `keeper_blade`, crystals, and 150 XP.
+- **Master QA Test Suite:**
+  - `tests/test_master_suite.lua` updated with 10 comprehensive specification verification gates. Verified 100% PASS in Roblox Studio DataModel.
+
 ## [1.1.0] - 2026-11-12 — Perfect Low-Poly Edition
 
 ### Added

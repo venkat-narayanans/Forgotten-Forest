@@ -19,6 +19,7 @@ SurvivalService.__index = SurvivalService
 
 local _worldService: any = nil
 local _inventoryService: any = nil
+local _weatherService: any = nil
 local _playerStats: { [number]: Types.PlayerStats } = {}
 local _lastSprintTime: { [number]: number } = {}
 local _activeRevives: { [number]: { targetId: number, startTime: number } } = {}
@@ -54,6 +55,7 @@ function SurvivalService.Init(dependencies: { [string]: any })
     print("[SurvivalService] Initializing SurvivalService...")
     _worldService = dependencies.WorldService
     _inventoryService = dependencies.InventoryService
+    _weatherService = dependencies.WeatherService
 
     local sprintRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestSprint)
     if sprintRemote then
@@ -73,7 +75,7 @@ end
 function SurvivalService.Start()
     print("[SurvivalService] SurvivalService started.")
 
-    Players.PlayerAdded:Connect(function(player)
+    local function onPlayerAdded(player: Player)
         _playerStats[player.UserId] = createInitialStats()
         _lastSprintTime[player.UserId] = os.clock()
         _isProcessingDeath[player.UserId] = false
@@ -91,7 +93,12 @@ function SurvivalService.Start()
         end)
 
         syncStatsToClient(player)
-    end)
+    end
+
+    Players.PlayerAdded:Connect(onPlayerAdded)
+    for _, player in ipairs(Players:GetPlayers()) do
+        task.spawn(onPlayerAdded, player)
+    end
 
     Players.PlayerRemoving:Connect(function(player)
         _playerStats[player.UserId] = nil
@@ -160,12 +167,45 @@ function SurvivalService.Start()
                             end
                         end
 
-                        -- Safe Haven Regeneration
+                        -- Environmental Survival: Warmth & Sanity Dynamics
                         local rootPart = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-                        if rootPart and _worldService and _worldService.IsInsideSafeZone(rootPart.Position) then
+                        local isSafe = rootPart and _worldService and _worldService.IsInsideSafeZone(rootPart.Position)
+                        local weatherWarmthMult = _weatherService and _weatherService.GetWarmthMultiplier() or 1.0
+                        local weatherSanityMult = _weatherService and _weatherService.GetSanityMultiplier() or 1.0
+
+                        if isSafe then
+                            -- Safe Haven Recovery
                             stats.Health = math.min(stats.MaxHealth, stats.Health + (SurvivalConfig.SafeHavenHealthRegen * dt))
+                            stats.Warmth = math.min(stats.MaxWarmth, stats.Warmth + (SurvivalConfig.WarmthRecoveryNearFire * dt))
                             stats.Sanity = math.min(stats.MaxSanity, stats.Sanity + (SurvivalConfig.SafeHavenSanityRegen * dt))
                             humanoid.Health = stats.Health
+                        else
+                            -- Check if player is holding a torch or lantern
+                            local tool = char:FindFirstChildWhichIsA("Tool")
+                            local hasLight = tool and (tool.Name == "torch" or tool.Name == "advanced_lantern")
+
+                            if hasLight then
+                                stats.Warmth = math.min(stats.MaxWarmth, stats.Warmth + (2.0 * dt))
+                            else
+                                stats.Warmth = math.max(0, stats.Warmth - (SurvivalConfig.WarmthDecayColdZone * weatherWarmthMult * dt))
+                            end
+
+                            -- Hypothermia damage if freezing
+                            if stats.Warmth <= 0 then
+                                stats.Health = math.max(0, stats.Health - (2.5 * dt))
+                                humanoid.Health = stats.Health
+                                if stats.Health <= 0 then
+                                    stats.IsDowned = true
+                                    stats.DownedTimer = BalanceConfig.DownedDuration
+                                    stats.IsSprinting = false
+                                end
+                            end
+
+                            -- Sanity decay in deep wilderness
+                            if rootPart and rootPart.Position.Z < -250 then
+                                local sanityDrain = (hasLight and 0.3 or 1.0) * weatherSanityMult * dt
+                                stats.Sanity = math.max(0, stats.Sanity - sanityDrain)
+                            end
                         end
 
                         syncStatsToClient(player)
@@ -174,6 +214,16 @@ function SurvivalService.Start()
             end
         end
     end)
+end
+
+function SurvivalService.DrainStamina(player: Player, amount: number): boolean
+    local stats = _playerStats[player.UserId]
+    if not stats or stats.IsDowned then return false end
+    if stats.Stamina < amount then return false end
+    stats.Stamina = math.max(0, stats.Stamina - amount)
+    _lastSprintTime[player.UserId] = os.clock()
+    syncStatsToClient(player)
+    return true
 end
 
 function SurvivalService.SetSprinting(player: Player, isSprinting: boolean)

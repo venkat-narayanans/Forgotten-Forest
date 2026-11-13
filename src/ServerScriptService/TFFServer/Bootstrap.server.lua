@@ -32,6 +32,7 @@ local ServicesFolder = ServerScriptService.TFFServer.Services
 local ProfileService = require(ServicesFolder.ProfileService)
 local WorldService = require(ServicesFolder.WorldService)
 local TimeCycleService = require(ServicesFolder.TimeCycleService)
+local WeatherService = require(ServicesFolder.WeatherService)
 local SurvivalService = require(ServicesFolder.SurvivalService)
 local InventoryService = require(ServicesFolder.InventoryService)
 local CraftingService = require(ServicesFolder.CraftingService)
@@ -42,12 +43,14 @@ local QuestService = require(ServicesFolder.QuestService)
 local CombatService = require(ServicesFolder.CombatService)
 local CreatureService = require(ServicesFolder.CreatureService)
 local EventService = require(ServicesFolder.EventService)
+local BossEncounterService = require(ServicesFolder.BossEncounterService)
 local PlayerService = require(ServicesFolder.PlayerService)
 
 local services = {
     ProfileService = ProfileService,
     WorldService = WorldService,
     TimeCycleService = TimeCycleService,
+    WeatherService = WeatherService,
     SurvivalService = SurvivalService,
     InventoryService = InventoryService,
     CraftingService = CraftingService,
@@ -58,6 +61,7 @@ local services = {
     CombatService = CombatService,
     CreatureService = CreatureService,
     EventService = EventService,
+    BossEncounterService = BossEncounterService,
     PlayerService = PlayerService,
 }
 
@@ -67,6 +71,7 @@ local orderedServiceKeys = {
     "ProgressionService",
     "RewardService",
     "InventoryService",
+    "WeatherService",
     "SurvivalService",
     "TimeCycleService",
     "ResourceService",
@@ -74,6 +79,7 @@ local orderedServiceKeys = {
     "CombatService",
     "CreatureService",
     "EventService",
+    "BossEncounterService",
     "QuestService",
     "PlayerService",
 }

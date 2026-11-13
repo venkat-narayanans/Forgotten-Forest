@@ -1,14 +1,45 @@
 # DEVELOPMENT LOG — THE FORGOTTEN FOREST
 
 ## Current Status
-- **Current Phase:** Production Polish — Perfect Low-Poly Detailed Edition
-- **Phase Status:** PASS (100% Automated Regression Suite Pass; In-Studio Simulation Verified 0 Errors, 0 Warnings)
-- **Project Release Status:** PERFECT PRODUCTION RELEASE (v1.1.0)
-- **Last Updated:** 2026-11-12
+- **Current Phase:** Master Specification Grand Valley Overhaul (Phases A through F)
+- **Phase Status:** PASS (100% Master QA Test Suite Pass: 10/10 categories; In-Studio Simulation Verified 0 Errors, 0 Warnings)
+- **Project Release Status:** PRODUCTION RELEASE v2.0.0-grand-valley (Cloud Place Version 11)
+- **Last Updated:** 2026-11-13
 
 ---
 
-## Master Low-Poly Overhaul Checklist
+## Grand Valley Master Specification Overhaul Checklist (v2.0.0)
+
+- [x] **Phase A — Grand Valley World Expansion (3,370+ Studs, 100% Anchored)** (PASS)
+  - Built continuous explorable valley: Safe Haven Hub (`Z = +100 to -250`), Whispering Woods (`Z = -250 to -1150`), Abandoned Village (`Z = -1150 to -1800`), Crystal Caverns (`Z = -1800 to -2400`), Ancient Grounds & Boss Arena (`Z = -2400 to -3150`).
+  - Total parts: 1,186. Unanchored parts: 0 (100% anchored).
+  - 5 Zone trigger volumes in `workspace.TFF_World.Zones`.
+- [x] **Phase B — Weapons & Combat Pipeline** (PASS)
+  - Catalog: `WeaponDefinitions.lua` with 7 weapons (Field Knife, Wooden Spear, Hatchet, Keeper Blade, Hunting Bow, Flare Launcher, Pickaxe).
+  - Physical tools: 7 weapon models created in `ServerStorage.TFF.Templates.Tools` (12 total templates).
+  - Server pipeline: `CombatService.lua` validates state, equipped weapon, cooldown, stamina drain, creature damage, boss core, and floating combat text.
+  - Client binding: mouse raycasting in `InputController.lua`.
+- [x] **Phase C — Interactive NPCs & Story Clue Network** (PASS)
+  - 3 NPCs: Alden the Cartographer, Mara the Field Medic, The Old Keeper.
+  - 6 Story Clues: Safe Haven Orders, Scout Journal, Split Oak Carving, Village Ledger, Miner Warning, Ancient Tablet.
+  - `StoryDefinitions.lua` dialogue trees & clue text; `DialogueModal` in HUD; `PlayerService` interaction listeners.
+- [x] **Phase D — Weather & Dynamic World Events** (PASS)
+  - `WeatherService.lua`: 5 profiles (Clear, Light Rain, Heavy Rain, Dense Fog, Fog Surge) driving Atmosphere density (0.28 to 0.92) and survival drain.
+  - `EventService.lua`: Scheduled world events (Fog Surge wall, Strange Signal cache, Crystal Grotto resonance, Abandoned Caravan supply crate).
+  - `SurvivalService.lua`: Warmth/sanity decay, hypothermia damage, campfire recovery, safe late-join player handling.
+- [x] **Phase E — Interactive World Map Screen (Key 'M')** (PASS)
+  - Full-screen parchment `MapModal` with styled survey canvas, sector boundaries, survey legend, live coordinate display, and real-time normalized player position tracking.
+  - Key 'M' / Gamepad Select bindings and HUD quick-access button.
+- [x] **Phase F — Forest Guardian Multi-Phase Boss Encounter** (PASS)
+  - `BossEncounterService.lua`: 4-phase encounter (Awakening, Root Sweep telegraphed waves, Root Barrier requiring 5 Ancient Seals, Exposed Core damaging pulsing Crystal Heart, Defeated victory state granting tokens, coins, keeper blade, and XP).
+- [x] **Phase G — Master Verification & In-Studio Playtest** (PASS)
+  - `tests/test_master_suite.lua` executed in Roblox Studio DataModel: 10/10 categories (100% PASS).
+  - Live Play Mode simulation verified: 0 server errors, 0 client errors, clean initialization across all 16 services and 3 controllers.
+  - Saved to Roblox Cloud: Place Version 11.
+
+---
+
+## Master Low-Poly Overhaul Checklist (v1.1.0)
 
 - [x] **Step 1 — Atmospheric Lighting & Post-Processing Overhaul** (PASS)
 - [x] **Step 2 — Safe Haven Outpost Low-Poly Architecture** (PASS)

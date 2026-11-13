@@ -18,6 +18,8 @@ RemoteRegistry.Events = {
     RequestClaimQuest = "RequestClaimQuest",
     RequestEquipItem = "RequestEquipItem",
     RequestUseItem = "RequestUseItem",
+    RequestAttack = "RequestAttack",
+    RequestDialog = "RequestDialog",
 
     -- Server to Client Notifications & State Sync
     SyncProfile = "SyncProfile",
@@ -28,6 +30,11 @@ RemoteRegistry.Events = {
     SharedStorageUpdated = "SharedStorageUpdated",
     QuestUpdated = "QuestUpdated",
     BossHealthUpdated = "BossHealthUpdated",
+    CombatHitFeedback = "CombatHitFeedback",
+    SyncWeather = "SyncWeather",
+    WorldEventTriggered = "WorldEventTriggered",
+    RegionDiscovered = "RegionDiscovered",
+    SyncDialog = "SyncDialog",
 }
 
 RemoteRegistry.Functions = {

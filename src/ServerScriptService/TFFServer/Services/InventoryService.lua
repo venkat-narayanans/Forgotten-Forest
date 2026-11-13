@@ -74,12 +74,16 @@ end
 
 function InventoryService.Start()
     print("[InventoryService] InventoryService started.")
-    Players.PlayerAdded:Connect(function(player)
+    local function onPlayerAdded(player: Player)
         local updateRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SharedStorageUpdated)
         if updateRemote then
             updateRemote:FireClient(player, _sharedStorage)
         end
-    end)
+    end
+    Players.PlayerAdded:Connect(onPlayerAdded)
+    for _, player in ipairs(Players:GetPlayers()) do
+        task.spawn(onPlayerAdded, player)
+    end
 end
 
 function InventoryService.GetItemCount(player: Player, itemId: string): number

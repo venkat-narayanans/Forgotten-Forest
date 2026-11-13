@@ -68,13 +68,16 @@ function TimeCycleService.Start()
     print("[TimeCycleService] TimeCycleService started.")
     _isRunning = true
 
-    -- Handle late joiners
-    Players.PlayerAdded:Connect(function(player)
+    local function syncPlayer(player: Player)
         local syncRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncTimeCycle)
         if syncRemote then
             syncRemote:FireClient(player, getCurrentPhase(), _phaseTimeRemaining, Lighting.ClockTime)
         end
-    end)
+    end
+    Players.PlayerAdded:Connect(syncPlayer)
+    for _, player in ipairs(Players:GetPlayers()) do
+        task.spawn(syncPlayer, player)
+    end
 
     -- Cycle tick loop (1 update per second)
     task.spawn(function()

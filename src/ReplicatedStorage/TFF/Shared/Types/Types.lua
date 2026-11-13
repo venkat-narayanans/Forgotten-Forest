@@ -89,6 +89,22 @@ export type CreatureState =
     | "Return"
     | "Despawn"
 
+export type WeaponDefinition = {
+    WeaponId: string,
+    DisplayName: string,
+    Role: string,
+    BaseDamage: number,
+    Range: number,
+    Cooldown: number,
+    StaminaCost: number,
+    IsRanged: boolean,
+    EffectiveAgainst: string?,
+    Special: string,
+    ProjectileSpeed: number?,
+    GravityMultiplier: number?,
+    AmmoItemId: string?,
+}
+
 export type CreatureDefinition = {
     Id: string,
     DisplayName: string,

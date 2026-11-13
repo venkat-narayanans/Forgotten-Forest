@@ -1,10 +1,39 @@
 # DEVELOPMENT LOG — THE FORGOTTEN FOREST
 
 ## Current Status
-- **Current Phase:** Master Specification Grand Valley Overhaul (Phases A through F)
+- **Current Phase:** FTUE Onboarding, Starter Kit & NPC Overhaul (Phase H / v2.1.0)
 - **Phase Status:** PASS (100% Master QA Test Suite Pass: 10/10 categories; In-Studio Simulation Verified 0 Errors, 0 Warnings)
-- **Project Release Status:** PRODUCTION RELEASE v2.0.0-grand-valley (Cloud Place Version 11)
+- **Project Release Status:** PRODUCTION RELEASE v2.1.0-onboarding-overhaul (Cloud Place Version 18)
 - **Last Updated:** 2026-11-13
+
+---
+
+## FTUE Onboarding, Starter Kit & NPC Overhaul Checklist (v2.1.0)
+
+- [x] **Step 1 — NPC Visual Rebuild & Open Pavilions** (PASS)
+  - Removed solid bounding boxes encasing Mara and Alden.
+  - Built open timber pavilions with corner pillars, rafters, and warm lanterns (`Y = 12` clearance).
+  - Sculpted custom low-poly Humanoid models:
+    - *Alden (`NPC_cartographer`):* Fedora with gold band, spectacles, mustache, explorer coat, harness, map cylinder backpack, and drafting desk.
+    - *Mara (`NPC_medic`):* Field medic beret, auburn ponytail, white tunic with red cross armband, satchel, and apothecary table with neon potion vials.
+    - *The Old Keeper (`NPC_old_keeper`):* Relocated to open village plaza at `Vector3(70, 3, -1458)` with cowl, silver beard, runic eyes, and glowing staff.
+- [x] **Step 2 — Expedition Starter Supply Chest & Default Profile Gear** (PASS)
+  - Created `ExpeditionStarterChest` at `Vector3(5, 1.2, -16)` on open path north of campfire with nameplate and prompt.
+  - Updated `ProfileService.lua`: equipped new players with torch, field knife, warm clothing, 3x healing salves, and starting crafting resources.
+  - Updated `PlayerService.lua`: chest interaction claims kit, completes `q_starter_kit`, and shows confirmation banner.
+- [x] **Step 3 — Crafting Guidance & Real-Time Material Feedback** (PASS)
+  - Added `CraftingGuideBanner` to `CraftingModal` explaining crafting rules and workbench requirements.
+  - Overhauled `HUDController.lua` (`RefreshCraftingModal`) to show green `(Ready)` badges and red deficit counts (`Need X`).
+  - Added 14 Safe Haven practice resource nodes (driftwood, stone, herbs, water) for risk-free gathering practice.
+- [x] **Step 4 — Quest Notice Board & On-Screen Active Objective Tracker** (PASS)
+  - Fixed client `ProximityPrompt` input consumption via `ProximityPromptService.PromptTriggered`.
+  - Added dedicated `[Q] QUESTS` and `[C] CRAFT` HUD buttons mapped to keys `Q`, `J`, and `C`.
+  - Rebuilt `QuestModal` with `QuestList` displaying styled quest cards for all 7 game quests.
+  - Added persistent top-left on-screen `ObjectiveTracker` guiding players step-by-step through progression milestones.
+- [x] **Step 5 — Master Verification & Cloud Place Save** (PASS)
+  - 10/10 automated QA gates re-verified in Studio DataModel.
+  - Live simulation in Play Mode verified with hotbar populated and UI responsive.
+  - Saved to Roblox Cloud: Place Version 18.
 
 ---
 

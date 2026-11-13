@@ -673,12 +673,39 @@ export type QuestDefinition = {
 }
 
 local QuestDefinitions: { [string]: QuestDefinition } = {
+    q_starter_kit = {
+        QuestId = "q_starter_kit",
+        Title = "Equip for the Wilds",
+        Description = "Claim your survival kit from the Expedition Starter Chest beside the Safe Haven beacon fire. Equip your torch and field knife to prepare for the outer valley.",
+        Category = "Survival",
+        Prerequisites = {},
+        Objectives = {
+            {
+                Type = "Interact",
+                Target = "ExpeditionStarterChest",
+                RequiredCount = 1,
+                Description = "Claim Expedition Starter Supplies by Beacon Fire",
+            },
+            {
+                Type = "EquipItem",
+                Target = "torch",
+                RequiredCount = 1,
+                Description = "Equip Traveler's Torch (Press 1 or Click Hotbar)",
+            },
+        },
+        Rewards = {
+            XP = 100,
+            ForestCoins = 50,
+            AncientTokens = 0,
+        },
+        IsRepeatable = false,
+    },
     q_first_steps = {
         QuestId = "q_first_steps",
         Title = "First Steps into the Unknown",
         Description = "Explore the immediate perimeter outside the Safe Haven boundary.",
         Category = "Exploration",
-        Prerequisites = {},
+        Prerequisites = { "q_starter_kit" },
         Objectives = {
             {
                 Type = "DiscoverLocation",
@@ -721,6 +748,27 @@ local QuestDefinitions: { [string]: QuestDefinition } = {
         },
         IsRepeatable = false,
     },
+    q_whispering_woods = {
+        QuestId = "q_whispering_woods",
+        Title = "The Ravine Crossing",
+        Description = "Cross the fallen timber bridge across Creek Ravine and discover the ancient Split Oak landmark.",
+        Category = "Exploration",
+        Prerequisites = { "q_first_steps" },
+        Objectives = {
+            {
+                Type = "DiscoverLocation",
+                Target = "Split Oak Landmark",
+                RequiredCount = 1,
+                Description = "Discover the Split Oak Landmark",
+            },
+        },
+        Rewards = {
+            XP = 150,
+            ForestCoins = 75,
+            AncientTokens = 1,
+        },
+        IsRepeatable = false,
+    },
     q_helping_hand = {
         QuestId = "q_helping_hand",
         Title = "Comrades in the Mist",
@@ -760,6 +808,27 @@ local QuestDefinitions: { [string]: QuestDefinition } = {
             XP = 200,
             ForestCoins = 100,
             AncientTokens = 2,
+        },
+        IsRepeatable = false,
+    },
+    q_ancient_seals = {
+        QuestId = "q_ancient_seals",
+        Title = "Shatter the Corrupted Ward",
+        Description = "Venture to Ancient Grounds and channel all 5 Megalith Seals to expose the Forest Guardian.",
+        Category = "Mystery",
+        Prerequisites = { "q_investigate_village" },
+        Objectives = {
+            {
+                Type = "Interact",
+                Target = "AncientSeal",
+                RequiredCount = 5,
+                Description = "Channel 5 Ancient Megalith Seals",
+            },
+        },
+        Rewards = {
+            XP = 500,
+            ForestCoins = 250,
+            AncientTokens = 5,
         },
         IsRepeatable = false,
     },

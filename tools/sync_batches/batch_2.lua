@@ -33,7 +33,7 @@ StoryDefinitions.Clues = {
         Title = "Captain's Deployment Orders",
         Author = "Captain Roderick, Expedition Leader",
         Region = "Safe Haven",
-        Body = "Expedition Order #12: Safe Haven basecamp established. Maintain the central beacon fire at all costs—the light field holds the perimeter intact against forest horrors. Do not cross the Creek Ravine into Whispering Woods without a torch, warm clothing, and defensive armaments.",
+        Body = "EXPEDITION ORDER #12: Safe Haven basecamp established. Maintain the central beacon fire at all costs—the light field holds the perimeter intact against forest horrors.\n\nBEFORE VENTURING OUT:\n1. Open the glowing Expedition Starter Chest right beside this central beacon fire to claim your Traveler's Torch, Field Knife, Explorer's Parka (Warm Clothing), and 3x Herbal Salves.\n2. Review your Quest Log (press [Q] or click QUESTS on your HUD) and your Valley Survey Map (press [M] or click MAP).\n3. Practice gathering timber and herbs around Safe Haven, and use your Crafting Menu (press [C] or click CRAFTING) to prepare additional equipment.\n\nDo not cross the Creek Ravine into Whispering Woods without your torch equipped and warm parka donned!",
         UnlockDiscovery = "Safe Haven",
     },
     scout_journal = {
@@ -83,11 +83,19 @@ StoryDefinitions.Dialogues = {
         NPCId = "cartographer",
         DisplayName = "Alden",
         Title = "The Valley Cartographer",
-        Greeting = "Greetings, explorer. The valley stretches over 3,300 studs to the northern basalt peaks. Press [M] at any time to consult your valley map.",
+        Greeting = "Greetings, recruit! Before heading north into Whispering Woods, open the Expedition Starter Chest by our beacon fire to claim your torch, knife, and warm parka. Press [M] for your map, [Q] for quests, and [C] for crafting.",
         Topics = {
+            ["start"] = {
+                prompt = "Where do I start?",
+                response = "Open the Expedition Starter Chest beside the beacon fire for your torch, field knife, and warm parka. Press [1] on your keyboard or tap your hotbar to hold the torch, and press [Q] to view your active missions!",
+            },
+            ["resources"] = {
+                prompt = "Where do I find crafting materials?",
+                response = "Safe Haven's perimeter has fallen driftwood timber, loose river stones, and soothing herbs. Practice gathering them here safely before crossing into Whispering Woods! Press [C] to open your Crafting menu.",
+            },
             ["valley"] = {
                 prompt = "Tell me about the valley layout.",
-                response = "Safe Haven sits in the sheltered south. To the north lies Whispering Woods, bisected by the creek. Cross the fallen log to reach the Split Oak and Silent Pond. Beyond the gorge lies the Abandoned Village and Crystal Caverns.",
+                response = "Safe Haven sits in the sheltered south. To the north lies Whispering Woods, bisected by the creek. Cross the fallen log bridge to reach the Split Oak and Silent Pond. Beyond the gorge lies the Abandoned Village and Crystal Caverns, leading to the Ancient Grounds.",
             },
             ["landmarks"] = {
                 prompt = "What landmarks should I look for?",
@@ -99,15 +107,19 @@ StoryDefinitions.Dialogues = {
         NPCId = "medic",
         DisplayName = "Mara",
         Title = "Field Medic",
-        Greeting = "Welcome back alive. The cold and damp in this valley are just as lethal as the creatures. Take care of yourself out there.",
+        Greeting = "Welcome back in one piece! The cold and damp in this valley are just as lethal as the shadow beasts. Always keep your Explorer's Parka equipped and carry a lit torch.",
         Topics = {
             ["warmth"] = {
                 prompt = "How does Warmth work?",
-                response = "When cold rain or dense fog rolls in, your warmth drops rapidly. If it reaches zero, hypothermia sets in, draining your health. Stand near our beacon fire or carry a lit torch to restore warmth.",
+                response = "When cold rain or dense fog rolls in, your warmth drops rapidly. If it reaches zero, hypothermia sets in, draining your health. Stand near our beacon fire or carry a lit torch (press [1]) to restore warmth.",
             },
             ["healing"] = {
                 prompt = "How do I brew healing salves?",
-                response = "Gather wild soothing moss near damp logs and draw spring water from the creek. Combine them at the workbench into Herbal Salves—they heal 40 health over a few seconds.",
+                response = "Press [C] or click the CRAFTING button on your HUD. You can brew Herbal Salves anywhere from 2 Soothing Moss and 1 Spring Water. They restore 40 Health over 3 seconds. Use them with Key [F] or click their hotbar slot!",
+            },
+            ["defense"] = {
+                prompt = "How do I defend myself?",
+                response = "Equip your Field Knife from your hotbar and use left-click to attack. For larger stalkers, visit the Workbench to craft a Wooden Spear (reach 9 studs) or a Forged Hatchet!",
             },
         },
     },

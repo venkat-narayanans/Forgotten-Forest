@@ -25,6 +25,8 @@ local _screenGui: ScreenGui? = nil
 local _currentRegionName = "Safe Haven"
 local _selectedSlot: number? = nil
 local _cachedInventory: { [number]: { ItemId: string, Quantity: number } } = {}
+local _activeQuests: { [string]: any } = {}
+local _completedQuests: { [string]: boolean } = {}
 
 -- Modals references
 local _craftingModal: Frame? = nil
@@ -36,6 +38,9 @@ local _dialogueModal: Frame? = nil
 local _bossBar: Frame? = nil
 local _hotbarContainer: Frame? = nil
 local _regionBanner: TextLabel? = nil
+local _objectiveTracker: Frame? = nil
+local _craftingButton: TextButton? = nil
+local _questButton: TextButton? = nil
 
 -- Settings state
 local _reducedEffects = false
@@ -117,6 +122,9 @@ function HUDController.Start()
     _dialogueModal = mainContainer:FindFirstChild("DialogueModal") :: Frame?
     _bossBar = mainContainer:FindFirstChild("BossBar") :: Frame?
     _hotbarContainer = mainContainer:FindFirstChild("HotbarContainer") :: Frame?
+    _objectiveTracker = mainContainer:FindFirstChild("ObjectiveTracker") :: Frame?
+    _craftingButton = mainContainer:FindFirstChild("CraftingButton") :: TextButton?
+    _questButton = mainContainer:FindFirstChild("QuestButton") :: TextButton?
 
     -- Modal Close Buttons
     local function hookModalClose(modal: Frame?)
@@ -135,33 +143,24 @@ function HUDController.Start()
     hookModalClose(_mapModal)
     hookModalClose(_dialogueModal)
 
-    -- Map Button Wiring
+    -- HUD Action Buttons Wiring
     local mapBtn = mainContainer:FindFirstChild("MapButton") :: TextButton?
     if mapBtn then
         mapBtn.MouseButton1Click:Connect(function()
-            HUDController.ToggleMapModal()
+            HUDController.ToggleModal("Map")
         end)
     end
 
-    -- Wire up Crafting Buttons
-    if _craftingModal then
-        local recipeList = _craftingModal:FindFirstChild("RecipeList") :: ScrollingFrame?
-        if recipeList then
-            for _, card in ipairs(recipeList:GetChildren()) do
-                if card:IsA("Frame") and card.Name:sub(1, 5) == "Card_" then
-                    local recipeId = card.Name:sub(6)
-                    local craftBtn = card:FindFirstChild("CraftButton") :: TextButton?
-                    if craftBtn then
-                        craftBtn.MouseButton1Click:Connect(function()
-                            local craftRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestCraft)
-                            if craftRemote then
-                                craftRemote:FireServer(recipeId)
-                            end
-                        end)
-                    end
-                end
-            end
-        end
+    if _craftingButton then
+        _craftingButton.MouseButton1Click:Connect(function()
+            HUDController.ToggleModal("Crafting")
+        end)
+    end
+
+    if _questButton then
+        _questButton.MouseButton1Click:Connect(function()
+            HUDController.ToggleModal("Quest")
+        end)
     end
 
     -- Wire up Hotbar Slots
@@ -209,14 +208,44 @@ function HUDController.Start()
         end
     end
 
-    -- Sync Profile & Inventory
+    -- Sync Profile, Inventory & Quests
     local syncProfileRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncProfile)
     if syncProfileRemote then
         syncProfileRemote.OnClientEvent:Connect(function(profile: any)
-            if profile and profile.inventory then
-                _cachedInventory = profile.inventory
-                refreshHotbarUI()
+            if profile then
+                if profile.inventory then
+                    _cachedInventory = profile.inventory
+                    refreshHotbarUI()
+                end
+                if profile.activeQuests then
+                    _activeQuests = profile.activeQuests
+                end
+                if profile.completedQuests then
+                    _completedQuests = profile.completedQuests
+                end
+                HUDController.RefreshCraftingModal()
+                HUDController.RefreshQuestModal()
+                HUDController.UpdateObjectiveTracker()
             end
+        end)
+    end
+
+    -- Hook Quest Updates
+    local questUpdateRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.QuestUpdated)
+    if questUpdateRemote then
+        questUpdateRemote.OnClientEvent:Connect(function(activeQuests: any, completedQuests: any)
+            if activeQuests then _activeQuests = activeQuests end
+            if completedQuests then _completedQuests = completedQuests end
+            HUDController.RefreshQuestModal()
+            HUDController.UpdateObjectiveTracker()
+        end)
+    end
+
+    -- Hook General Notifications
+    local showNotifRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.ShowNotification)
+    if showNotifRemote then
+        showNotifRemote.OnClientEvent:Connect(function(title: string, message: string)
+            HUDController.ShowBannerNotification(title, message)
         end)
     end
 
@@ -374,6 +403,7 @@ function HUDController.Start()
                         })
                         tween:Play()
                     end
+                    HUDController.UpdateObjectiveTracker()
                 end
 
                 -- If Map Modal is open, update player marker
@@ -433,14 +463,26 @@ function HUDController.UseActiveItem()
     end
 end
 
+local function countInInventory(itemId: string): number
+    local total = 0
+    for _, item in ipairs(_cachedInventory) do
+        if item.ItemId == itemId then
+            total += item.Quantity
+        end
+    end
+    return total
+end
+
 function HUDController.OpenModal(modalName: string)
     HUDController.CloseAllModals()
     if modalName == "Crafting" and _craftingModal then
         _craftingModal.Visible = true
+        HUDController.RefreshCraftingModal()
     elseif modalName == "Storage" and _storageModal then
         _storageModal.Visible = true
     elseif modalName == "Quest" and _questModal then
         _questModal.Visible = true
+        HUDController.RefreshQuestModal()
     elseif modalName == "Lore" and _loreModal then
         _loreModal.Visible = true
     elseif modalName == "Map" and _mapModal then
@@ -449,14 +491,260 @@ function HUDController.OpenModal(modalName: string)
     end
 end
 
-function HUDController.ToggleMapModal()
-    if _mapModal then
-        local willBeVisible = not _mapModal.Visible
-        HUDController.CloseAllModals()
-        _mapModal.Visible = willBeVisible
-        if willBeVisible then
-            HUDController.UpdateMapDisplay()
+function HUDController.ToggleModal(modalName: string)
+    local targetModal: Frame? = nil
+    if modalName == "Crafting" then targetModal = _craftingModal
+    elseif modalName == "Storage" then targetModal = _storageModal
+    elseif modalName == "Quest" then targetModal = _questModal
+    elseif modalName == "Lore" then targetModal = _loreModal
+    elseif modalName == "Map" then targetModal = _mapModal
+    end
+
+    if targetModal then
+        if targetModal.Visible then
+            targetModal.Visible = false
+        else
+            HUDController.OpenModal(modalName)
         end
+    end
+end
+
+function HUDController.ToggleMapModal()
+    HUDController.ToggleModal("Map")
+end
+
+function HUDController.RefreshCraftingModal()
+    if not _craftingModal then return end
+    local recipeList = _craftingModal:FindFirstChild("RecipeList") :: ScrollingFrame?
+    if not recipeList then return end
+
+    local RecipeDefinitions = require(ReplicatedStorage.TFF.Shared.Definitions.RecipeDefinitions)
+    local ItemDefinitions = require(ReplicatedStorage.TFF.Shared.Definitions.ItemDefinitions)
+
+    for _, card in ipairs(recipeList:GetChildren()) do
+        if card:IsA("Frame") and card.Name:sub(1, 5) == "Card_" then
+            local recipeId = card.Name:sub(6)
+            local recipeDef = RecipeDefinitions[recipeId]
+            if recipeDef then
+                local allReady = true
+                local ingParts: { string } = {}
+
+                for _, ing in ipairs(recipeDef.Ingredients) do
+                    local count = countInInventory(ing.ItemId)
+                    local itemDef = ItemDefinitions[ing.ItemId]
+                    local name = itemDef and itemDef.DisplayName or ing.ItemId
+                    if count >= ing.Quantity then
+                        table.insert(ingParts, string.format("%s: %d/%d (Ready)", name, count, ing.Quantity))
+                    else
+                        table.insert(ingParts, string.format("%s: %d/%d (Need %d)", name, count, ing.Quantity, ing.Quantity - count))
+                        allReady = false
+                    end
+                end
+
+                for _, child in ipairs(card:GetChildren()) do
+                    if child:IsA("TextLabel") and child.Position.Y.Offset > 15 then
+                        child.Text = table.concat(ingParts, " • ")
+                        child.TextColor3 = allReady and Color3.fromRGB(120, 230, 140) or Color3.fromRGB(240, 120, 120)
+                    end
+                end
+
+                local craftBtn = card:FindFirstChild("CraftButton") :: TextButton?
+                if craftBtn then
+                    if allReady then
+                        craftBtn.Text = "[ CRAFT ]"
+                        craftBtn.BackgroundColor3 = Color3.fromRGB(46, 139, 87)
+                        craftBtn.TextColor3 = Color3.fromRGB(240, 255, 240)
+                    else
+                        craftBtn.Text = "[ NEED MATERIALS ]"
+                        craftBtn.BackgroundColor3 = Color3.fromRGB(80, 50, 50)
+                        craftBtn.TextColor3 = Color3.fromRGB(220, 160, 160)
+                    end
+
+                    -- Clean previous listeners by storing connection tag or replacing
+                    if not craftBtn:GetAttribute("Wired") then
+                        craftBtn:SetAttribute("Wired", true)
+                        craftBtn.MouseButton1Click:Connect(function()
+                            -- Recheck readiness at click time
+                            local canCraftNow = true
+                            for _, ing in ipairs(recipeDef.Ingredients) do
+                                if countInInventory(ing.ItemId) < ing.Quantity then
+                                    canCraftNow = false
+                                    break
+                                end
+                            end
+
+                            if canCraftNow then
+                                local craftRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.RequestCraft)
+                                if craftRemote then
+                                    craftRemote:FireServer(recipeId)
+                                end
+                            else
+                                HUDController.ShowBannerNotification("CRAFTING ALERT", "Missing materials for " .. (recipeDef.DisplayName or recipeId) .. "!\nGather driftwood, stone, or herbs around Safe Haven.")
+                            end
+                        end)
+                    end
+                end
+            end
+        end
+    end
+end
+
+function HUDController.RefreshQuestModal()
+    if not _questModal then return end
+    local questList = _questModal:FindFirstChild("QuestList") :: ScrollingFrame?
+    if not questList then return end
+
+    -- Clear existing quest cards
+    for _, child in ipairs(questList:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+
+    local QuestDefinitions = require(ReplicatedStorage.TFF.Shared.Definitions.QuestDefinitions)
+    local orderedKeys = {
+        "q_starter_kit",
+        "q_first_steps",
+        "q_prepare_for_night",
+        "q_whispering_woods",
+        "q_investigate_village",
+        "q_ancient_seals",
+        "q_helping_hand",
+    }
+
+    local yTotal = 0
+    for _, qId in ipairs(orderedKeys) do
+        local qDef = QuestDefinitions[qId]
+        if qDef then
+            local isCompleted = _completedQuests[qId] == true
+            local isActive = _activeQuests[qId] ~= nil or (qId == "q_starter_kit" and not isCompleted)
+
+            local card = Instance.new("Frame")
+            card.Name = "QuestCard_" .. qId
+            card.Size = UDim2.new(1, -10, 0, 84)
+            card.Position = UDim2.new(0, 5, 0, yTotal)
+            card.BackgroundColor3 = isCompleted and Color3.fromRGB(26, 32, 40) or (isActive and Color3.fromRGB(34, 42, 54) or Color3.fromRGB(28, 32, 42))
+            card.BorderSizePixel = 0
+
+            local cardCorner = Instance.new("UICorner")
+            cardCorner.CornerRadius = UDim.new(0, 6)
+            cardCorner.Parent = card
+
+            local cardStroke = Instance.new("UIStroke")
+            cardStroke.Thickness = isActive and 1.5 or 1.0
+            cardStroke.Color = isCompleted and Color3.fromRGB(60, 80, 70) or (isActive and Color3.fromRGB(215, 175, 75) or Color3.fromRGB(60, 70, 85))
+            cardStroke.Parent = card
+
+            -- Title & Category Badge
+            local titleLbl = Instance.new("TextLabel")
+            titleLbl.Size = UDim2.new(1, -120, 0, 20)
+            titleLbl.Position = UDim2.new(0, 10, 0, 6)
+            titleLbl.BackgroundTransparency = 1
+            titleLbl.Text = string.format("[%s] %s", string.upper(qDef.Category), qDef.Title)
+            titleLbl.TextColor3 = isCompleted and Color3.fromRGB(130, 200, 140) or (isActive and Color3.fromRGB(255, 220, 90) or Color3.fromRGB(200, 210, 220))
+            titleLbl.Font = Enum.Font.GothamBold
+            titleLbl.TextSize = 13
+            titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+            titleLbl.Parent = card
+
+            -- Description
+            local descLbl = Instance.new("TextLabel")
+            descLbl.Size = UDim2.new(1, -120, 0, 32)
+            descLbl.Position = UDim2.new(0, 10, 0, 26)
+            descLbl.BackgroundTransparency = 1
+            descLbl.Text = qDef.Description
+            descLbl.TextColor3 = Color3.fromRGB(190, 200, 210)
+            descLbl.Font = Enum.Font.GothamMedium
+            descLbl.TextSize = 11
+            descLbl.TextWrapped = true
+            descLbl.TextXAlignment = Enum.TextXAlignment.Left
+            descLbl.Parent = card
+
+            -- Objectives & Rewards Summary
+            local rewardLbl = Instance.new("TextLabel")
+            rewardLbl.Size = UDim2.new(1, -120, 0, 18)
+            rewardLbl.Position = UDim2.new(0, 10, 0, 60)
+            rewardLbl.BackgroundTransparency = 1
+            local rewardStr = string.format("REWARDS: +%d XP  |  +%d Forest Coins", qDef.Rewards.XP, qDef.Rewards.ForestCoins)
+            if qDef.Rewards.AncientTokens > 0 then
+                rewardStr = rewardStr .. string.format("  |  +%d Ancient Tokens", qDef.Rewards.AncientTokens)
+            end
+            rewardLbl.Text = rewardStr
+            rewardLbl.TextColor3 = Color3.fromRGB(150, 175, 200)
+            rewardLbl.Font = Enum.Font.GothamBold
+            rewardLbl.TextSize = 10
+            rewardLbl.TextXAlignment = Enum.TextXAlignment.Left
+            rewardLbl.Parent = card
+
+            -- Action / Status Badge
+            local statusBadge = Instance.new("TextLabel")
+            statusBadge.Size = UDim2.new(0, 100, 0, 28)
+            statusBadge.Position = UDim2.new(1, -108, 0, 26)
+            statusBadge.Font = Enum.Font.GothamBold
+            statusBadge.TextSize = 11
+
+            local bCorner = Instance.new("UICorner")
+            bCorner.CornerRadius = UDim.new(0, 4)
+            bCorner.Parent = statusBadge
+
+            if isCompleted then
+                statusBadge.BackgroundColor3 = Color3.fromRGB(35, 75, 45)
+                statusBadge.TextColor3 = Color3.fromRGB(160, 240, 170)
+                statusBadge.Text = "[✓] COMPLETED"
+            elseif isActive then
+                statusBadge.BackgroundColor3 = Color3.fromRGB(45, 75, 110)
+                statusBadge.TextColor3 = Color3.fromRGB(255, 225, 90)
+                statusBadge.Text = "● ACTIVE"
+            else
+                statusBadge.BackgroundColor3 = Color3.fromRGB(45, 50, 60)
+                statusBadge.TextColor3 = Color3.fromRGB(160, 170, 180)
+                statusBadge.Text = "LOCKED"
+            end
+            statusBadge.Parent = card
+
+            card.Parent = questList
+            yTotal += 92
+        end
+    end
+    questList.CanvasSize = UDim2.new(0, 0, 0, yTotal + 20)
+end
+
+function HUDController.UpdateObjectiveTracker(overrideQuestId: string?)
+    if not _objectiveTracker then return end
+    local titleLbl = _objectiveTracker:FindFirstChild("ObjectiveTitle") :: TextLabel?
+    local descLbl = _objectiveTracker:FindFirstChild("ObjectiveDesc") :: TextLabel?
+    if not titleLbl or not descLbl then return end
+
+    local isStarterDone = _completedQuests["q_starter_kit"] == true
+    local hasTorch = false
+    for _, item in ipairs(_cachedInventory) do
+        if item.ItemId == "torch" then
+            hasTorch = true
+            break
+        end
+    end
+
+    if not isStarterDone and not hasTorch then
+        titleLbl.Text = "Equip for the Wilds"
+        descLbl.Text = "• Claim Expedition Starter Chest by Beacon Fire\n• Press [1] for Torch, [C] to Craft, [Q] for Quests"
+    elseif _currentRegionName == "Safe Haven" then
+        titleLbl.Text = "First Steps into the Unknown"
+        descLbl.Text = "• Practice gathering driftwood & stones around camp\n• Cross the fallen log bridge into Whispering Woods [M: Map]"
+    elseif _currentRegionName == "Whispering Woods" then
+        titleLbl.Text = "The Ravine Crossing"
+        descLbl.Text = "• Keep your lit torch in hand to retain Warmth\n• Locate the massive Split Oak landmark to the north"
+    elseif _currentRegionName == "Abandoned Village" then
+        titleLbl.Text = "Echoes of the Past"
+        descLbl.Text = "• Investigate Village Square & stopped Clock Tower\n• Speak with The Old Keeper on the cobblestone path"
+    elseif _currentRegionName == "Crystal Caverns" then
+        titleLbl.Text = "Luminescent Depths"
+        descLbl.Text = "• Traverse cavern shafts past glowing crystal formations\n• Proceed toward the Ancient Grounds plateau"
+    elseif _currentRegionName == "Ancient Grounds" then
+        titleLbl.Text = "Shatter the Corrupted Ward"
+        descLbl.Text = "• Channel all 5 Megalith Seals around the Elder Heartwood\n• Expose and strike the Forest Guardian's Crystal Heart"
+    else
+        titleLbl.Text = "Explore the Valley"
+        descLbl.Text = "• Consult Alden, Mara, and your Quest Board [Q]"
     end
 end
 

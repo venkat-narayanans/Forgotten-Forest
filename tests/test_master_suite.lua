@@ -165,6 +165,18 @@ local function runMasterTestSuite()
     local interactables = tffWorld:FindFirstChild("Interactables")
     assert(interactables ~= nil, "TFF_World.Interactables must exist")
 
+    -- Verify Expedition Starter Supply Chest in Safe Haven
+    local starterChest = interactables:FindFirstChild("ExpeditionStarterChest")
+    assert(starterChest ~= nil, "ExpeditionStarterChest must exist in Safe Haven")
+    assert(starterChest:FindFirstChildWhichIsA("ProximityPrompt", true) ~= nil, "ExpeditionStarterChest must have a ProximityPrompt")
+
+    -- Verify Practice Resource Nodes in Safe Haven
+    local resourceNodes = tffWorld:FindFirstChild("ResourceNodes")
+    assert(resourceNodes ~= nil, "ResourceNodes folder must exist")
+    assert(resourceNodes:FindFirstChild("SafeHaven_Driftwood_1") ~= nil, "SafeHaven practice driftwood node must exist")
+    assert(resourceNodes:FindFirstChild("SafeHaven_Stones_1") ~= nil, "SafeHaven practice stones node must exist")
+    assert(resourceNodes:FindFirstChild("SafeHaven_Herbs_1") ~= nil, "SafeHaven practice herbs node must exist")
+
     local expectedNPCs = { "NPC_cartographer", "NPC_medic", "NPC_old_keeper" }
     for _, npcName in ipairs(expectedNPCs) do
         local npc = interactables:FindFirstChild(npcName)
@@ -191,8 +203,12 @@ local function runMasterTestSuite()
     assert(StoryDefinitions.Dialogues["cartographer"] ~= nil, "StoryDefinitions missing cartographer dialogue")
     assert(StoryDefinitions.Clues["safe_haven_orders"] ~= nil, "StoryDefinitions missing safe_haven_orders clue")
 
+    local QuestDefinitions = require(ReplicatedStorage.TFF.Shared.Definitions.QuestDefinitions)
+    assert(QuestDefinitions.q_starter_kit ~= nil, "QuestDefinitions must include q_starter_kit")
+    assert(QuestDefinitions.q_whispering_woods ~= nil, "QuestDefinitions must include q_whispering_woods")
+
     testResults["NPCsAndStoryClues"] = true
-    print("✔ [6/10] Interactive NPCs & Story Clue Network Passed (3 NPCs, 6 Clues)")
+    print("✔ [6/10] Interactive NPCs, Starter Chest, Practice Nodes & Story Clues Passed")
 
     -- ==================================================
     -- 7. Weather & Dynamic Events Services
@@ -242,14 +258,18 @@ local function runMasterTestSuite()
     assert(mainC.MapModal.MapCanvas:FindFirstChild("PlayerMarker") ~= nil, "MapCanvas must have PlayerMarker")
     assert(mainC:FindFirstChild("DialogueModal") ~= nil, "DialogueModal must exist in HUD MainContainer")
     assert(mainC:FindFirstChild("CraftingModal") ~= nil, "CraftingModal must exist in HUD MainContainer")
+    assert(mainC.CraftingModal:FindFirstChild("CraftingGuideBanner") ~= nil, "CraftingGuideBanner must exist in CraftingModal")
     assert(mainC:FindFirstChild("StorageModal") ~= nil, "StorageModal must exist in HUD MainContainer")
     assert(mainC:FindFirstChild("QuestModal") ~= nil, "QuestModal must exist in HUD MainContainer")
-    assert(mainC:FindFirstChild("LoreModal") ~= nil, "LoreModal must exist in HUD MainContainer")
+    assert(mainC.QuestModal:FindFirstChild("QuestList") ~= nil, "QuestList must exist in QuestModal")
+    assert(mainC:FindFirstChild("ObjectiveTracker") ~= nil, "ObjectiveTracker must exist in HUD MainContainer")
+    assert(mainC:FindFirstChild("CraftingButton") ~= nil, "CraftingButton must exist in HUD MainContainer")
+    assert(mainC:FindFirstChild("QuestButton") ~= nil, "QuestButton must exist in HUD MainContainer")
     assert(mainC:FindFirstChild("SettingsModal") ~= nil, "SettingsModal must exist in HUD MainContainer")
     assert(mainC:FindFirstChild("HotbarContainer") ~= nil, "HotbarContainer must exist in HUD MainContainer")
 
     testResults["InteractiveMapAndModals"] = true
-    print("✔ [9/10] Interactive Map Screen (Key 'M') & Client UI Modals Passed")
+    print("✔ [9/10] Interactive Map, HUD Action Buttons, Objective Tracker & Quest Modal Passed")
 
     -- ==================================================
     -- 10. Security Audit: Server Authority & Exploit Guard

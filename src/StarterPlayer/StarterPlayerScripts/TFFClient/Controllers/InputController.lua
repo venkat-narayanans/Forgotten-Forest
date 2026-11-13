@@ -2,10 +2,12 @@
 --[[
     InputController.lua
     Client controller for handling user movement inputs (Sprint toggle/hold),
-    desktop keys (1-5 hotbar slots, E interact, F use item), and mobile controls.
+    desktop hotkeys (1-5 hotbar slots, E interact, F use item, C crafting, Q quests, M map, B storage),
+    ProximityPrompt integration, and mobile controls.
 ]]
 
 local UserInputService = game:GetService("UserInputService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -73,8 +75,35 @@ function InputController.Start()
         end
     end
 
+    -- Hook up ProximityPrompt interactions on client for instant UI response
+    ProximityPromptService.PromptTriggered:Connect(function(prompt: ProximityPrompt, playerWhoTriggered: Player)
+        if playerWhoTriggered ~= _player then return end
+        local parentInstance = prompt.Parent
+        if not parentInstance then return end
+
+        local model = parentInstance:FindFirstAncestorOfClass("Model")
+        local name = parentInstance.Name
+        if model and (model.Name == "ExpeditionStarterChest" or model.Name == "NPC_medic" or model.Name == "NPC_cartographer" or model.Name == "NPC_old_keeper") then
+            name = model.Name
+        end
+
+        if name == "QuestBoard" then
+            if _hudController then _hudController.OpenModal("Quest") end
+        elseif name == "Workbench" then
+            if _hudController then _hudController.OpenModal("Crafting") end
+        elseif name == "SharedStorageChest" then
+            if _hudController then _hudController.OpenModal("Storage") end
+        elseif name == "ExpeditionStarterChest" then
+            if _hudController then
+                _hudController.RefreshCraftingModal()
+                _hudController.UpdateObjectiveTracker("q_starter_kit")
+            end
+        end
+    end)
+
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
+        -- Ignore hotkeys only if player is actively typing in a TextBox
+        if gameProcessed and UserInputService:GetFocusedTextBox() then return end
 
         -- Sprint
         if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
@@ -96,6 +125,22 @@ function InputController.Start()
         elseif input.KeyCode == Enum.KeyCode.F then
             if _hudController then _hudController.UseActiveItem() end
 
+        -- Direct Hotkey for Crafting Modal (Key 'C')
+        elseif input.KeyCode == Enum.KeyCode.C then
+            if _hudController then _hudController.ToggleModal("Crafting") end
+
+        -- Direct Hotkey for Quest Log / Notice Board (Key 'Q' or 'J')
+        elseif input.KeyCode == Enum.KeyCode.Q or input.KeyCode == Enum.KeyCode.J then
+            if _hudController then _hudController.ToggleModal("Quest") end
+
+        -- Direct Hotkey for Storage (Key 'B' for Backpack/Storage)
+        elseif input.KeyCode == Enum.KeyCode.B then
+            if _hudController then _hudController.ToggleModal("Storage") end
+
+        -- Interactive Map Screen (Key 'M' or Gamepad Select)
+        elseif input.KeyCode == Enum.KeyCode.M or input.KeyCode == Enum.KeyCode.ButtonSelect then
+            if _hudController then _hudController.ToggleModal("Map") end
+
         -- Interact (Workbench, Chest, Quest Board, Lore Clue)
         elseif input.KeyCode == Enum.KeyCode.E then
             local obj, modalType = getNearestInteractable(BalanceConfig.DefaultInteractionRange + 2)
@@ -106,14 +151,11 @@ function InputController.Start()
         -- Close Modals
         elseif input.KeyCode == Enum.KeyCode.Escape then
             if _hudController then _hudController.CloseAllModals() end
-
-        -- Interactive Map Screen (Key 'M' or Gamepad Select)
-        elseif input.KeyCode == Enum.KeyCode.M or input.KeyCode == Enum.KeyCode.ButtonSelect then
-            if _hudController then _hudController.ToggleMapModal() end
         end
 
         -- Weapon Attack / Tool Action (LMB click)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if gameProcessed then return end
             local mousePos = UserInputService:GetMouseLocation()
             local camera = Workspace.CurrentCamera
             if camera then

@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.1.0] - 2026-11-13 — FTUE Onboarding, Starter Kit & NPC Overhaul
+
+### Added
+- **Expedition Starter Supply Chest (`ExpeditionStarterChest`):**
+  - Positioned along the open cobblestone path in Safe Haven (`Vector3(5, 1.2, -16)`) with iron bands, glowing gold latch, amber PointLight, and `BillboardGui` nameplate.
+  - Grants new and under-equipped players starting supplies: `torch`, `field_knife`, `warm_clothing`, 3x `healing_potion`, `wood` (8x), `stone` (6x), `cloth` (4x), `herb` (4x), and `water` (2x).
+  - Automatically completes `q_starter_kit` upon interaction.
+- **Detailed Low-Poly NPCs & Open-Air Pavilions:**
+  - Removed solid bounding blocks encasing Mara and Alden.
+  - Built open timber pavilions with corner pillars, wooden crossbeams, and hanging lanterns (`Y = 12` clearance).
+  - Sculpted custom low-poly Humanoid models:
+    - *Alden (`NPC_cartographer`):* Explorer fedora with gold band, wire spectacles, mustache, explorer coat, harness, map cylinder backpack, and drafting desk.
+    - *Mara (`NPC_medic`):* Field medic beret, auburn ponytail, white tunic with red cross armband, satchel, and apothecary table with neon potion vials.
+    - *The Old Keeper (`NPC_old_keeper`):* Relocated to open village plaza at `Vector3(70, 3, -1458)` with cowl, flowing silver beard, runic eyes, and glowing staff.
+- **Safe Haven Practice Resource Gathering Grounds:**
+  - Added 14 safe practice resource nodes inside the outpost walls (4 Driftwood logs, 4 River stone piles, 4 Herb bushes, 2 Water wells) tagged for risk-free gathering practice.
+- **Crafting Instructional Guide & Live Material Readiness:**
+  - Added `CraftingGuideBanner` to `CraftingModal` explaining crafting mechanics.
+  - Live inventory tracking in `HUDController.lua`: displays green `(Ready)` badges when ingredients are met and coral-red deficit counts (`Need X`) when missing.
+  - Contextual `CraftButton` displaying `[ CRAFT ]` or `[ NEED MATERIALS ]`.
+- **Quest System & On-Screen Active Objective Tracker:**
+  - Fixed client `ProximityPrompt` input consumption by listening on `ProximityPromptService.PromptTriggered`.
+  - Added dedicated `[Q] QUESTS` and `[C] CRAFT` HUD buttons mapped to keys `Q`, `J`, and `C`.
+  - Rebuilt `QuestModal` with `QuestList` displaying styled quest cards for all 7 game quests.
+  - Added persistent top-left on-screen `ObjectiveTracker` guiding players step-by-step from Safe Haven through the Forest Guardian encounter.
+
+### Changed
+- `ProfileService.lua`: `createDefaultProfile` now initializes new players with torch, field knife, warm clothing, potions, and crafting supplies.
+- `StoryDefinitions.lua`: Captain Roderick's orders updated to explicitly guide players to the starter chest, quest log, and practice nodes.
+- `PlayerService.lua`: Added chest interaction handler and quest state synchronization.
+
 ## [2.0.0] - 2026-11-13 — The Grand Valley Master Specification Edition
 
 ### Added

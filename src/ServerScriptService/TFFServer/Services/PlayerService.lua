@@ -19,6 +19,8 @@ PlayerService.__index = PlayerService
 local _profileService: any = nil
 local _worldService: any = nil
 local _progressionService: any = nil
+local _inventoryService: any = nil
+local _questService: any = nil
 
 local function onPlayerAdded(player: Player)
     print(string.format("[PlayerService] Player joined: %s (%d)", player.Name, player.UserId))
@@ -66,6 +68,8 @@ function PlayerService.Init(dependencies: { [string]: any })
     _profileService = dependencies.ProfileService
     _worldService = dependencies.WorldService
     _progressionService = dependencies.ProgressionService
+    _inventoryService = dependencies.InventoryService
+    _questService = dependencies.QuestService
 end
 
 function PlayerService.Start()
@@ -77,8 +81,9 @@ function PlayerService.Start()
         task.spawn(onPlayerAdded, player)
     end
 
-    -- Hook up ProximityPrompts for NPCs and Story Clues
+    -- Hook up ProximityPrompts for NPCs, Chests, and Story Clues
     local dialogRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncDialog)
+    local notificationRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.ShowNotification)
 
     ProximityPromptService.PromptTriggered:Connect(function(prompt: ProximityPrompt, player: Player)
         local parentInstance = prompt.Parent
@@ -94,7 +99,47 @@ function PlayerService.Start()
                 dialogRemote:FireClient(player, "NPC", data)
             end
 
-        -- 2. Story Clue Interaction
+        -- 2. Expedition Starter Supply Chest Interaction
+        elseif parentInstance.Name == "ExpeditionStarterChest" or (model and model.Name == "ExpeditionStarterChest") then
+            local profile = _profileService.GetProfile(player)
+            if profile then
+                local alreadyClaimed = profile.hasClaimedStarterKit == true
+                if not alreadyClaimed then
+                    profile.hasClaimedStarterKit = true
+                    if _inventoryService then
+                        _inventoryService.TryAddItem(player, "torch", 1)
+                        _inventoryService.TryAddItem(player, "field_knife", 1)
+                        _inventoryService.TryAddItem(player, "warm_clothing", 1)
+                        _inventoryService.TryAddItem(player, "healing_potion", 3)
+                        _inventoryService.TryAddItem(player, "wood", 8)
+                        _inventoryService.TryAddItem(player, "stone", 6)
+                        _inventoryService.TryAddItem(player, "cloth", 4)
+                        _inventoryService.TryAddItem(player, "herb", 4)
+                        _inventoryService.TryAddItem(player, "water", 2)
+                    end
+                    if _questService then
+                        _questService.TryClaimQuestReward(player, "q_starter_kit")
+                    end
+                    if notificationRemote then
+                        notificationRemote:FireClient(player, "STARTER SUPPLIES CLAIMED!", "Equipped with Torch, Field Knife, Explorer's Parka, and Salves! Press [Q] for Quests, [C] for Crafting, [M] for Map.")
+                    end
+                else
+                    -- Ensure they still have at least basic tools
+                    if _inventoryService then
+                        if _inventoryService.GetItemCount(player, "torch") == 0 then
+                            _inventoryService.TryAddItem(player, "torch", 1)
+                        end
+                        if _inventoryService.GetItemCount(player, "field_knife") == 0 then
+                            _inventoryService.TryAddItem(player, "field_knife", 1)
+                        end
+                    end
+                    if notificationRemote then
+                        notificationRemote:FireClient(player, "EXPEDITION SUPPLIES READY", "Your Torch, Field Knife, and Explorer's Parka are in your Hotbar and Inventory! Press [C] to Craft, [Q] for Quests.")
+                    end
+                end
+            end
+
+        -- 3. Story Clue Interaction
         elseif parentInstance:IsA("BasePart") and CollectionService:HasTag(parentInstance, "TFF_StoryClue") then
             local clueId = parentInstance:GetAttribute("ClueId") or "safe_haven_orders"
             local data = StoryDefinitions.Clues[clueId]

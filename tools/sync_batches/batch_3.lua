@@ -260,12 +260,16 @@ end
 
 function InventoryService.Start()
     print("[InventoryService] InventoryService started.")
-    Players.PlayerAdded:Connect(function(player)
+    local function onPlayerAdded(player: Player)
         local updateRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SharedStorageUpdated)
         if updateRemote then
             updateRemote:FireClient(player, _sharedStorage)
         end
-    end)
+    end
+    Players.PlayerAdded:Connect(onPlayerAdded)
+    for _, player in ipairs(Players:GetPlayers()) do
+        task.spawn(onPlayerAdded, player)
+    end
 end
 
 function InventoryService.GetItemCount(player: Player, itemId: string): number
@@ -475,6 +479,8 @@ PlayerService.__index = PlayerService
 local _profileService: any = nil
 local _worldService: any = nil
 local _progressionService: any = nil
+local _inventoryService: any = nil
+local _questService: any = nil
 
 local function onPlayerAdded(player: Player)
     print(string.format("[PlayerService] Player joined: %s (%d)", player.Name, player.UserId))
@@ -522,6 +528,8 @@ function PlayerService.Init(dependencies: { [string]: any })
     _profileService = dependencies.ProfileService
     _worldService = dependencies.WorldService
     _progressionService = dependencies.ProgressionService
+    _inventoryService = dependencies.InventoryService
+    _questService = dependencies.QuestService
 end
 
 function PlayerService.Start()
@@ -533,8 +541,9 @@ function PlayerService.Start()
         task.spawn(onPlayerAdded, player)
     end
 
-    -- Hook up ProximityPrompts for NPCs and Story Clues
+    -- Hook up ProximityPrompts for NPCs, Chests, and Story Clues
     local dialogRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.SyncDialog)
+    local notificationRemote = RemoteRegistry.GetRemoteEvent(RemoteRegistry.Events.ShowNotification)
 
     ProximityPromptService.PromptTriggered:Connect(function(prompt: ProximityPrompt, player: Player)
         local parentInstance = prompt.Parent
@@ -550,7 +559,47 @@ function PlayerService.Start()
                 dialogRemote:FireClient(player, "NPC", data)
             end
 
-        -- 2. Story Clue Interaction
+        -- 2. Expedition Starter Supply Chest Interaction
+        elseif parentInstance.Name == "ExpeditionStarterChest" or (model and model.Name == "ExpeditionStarterChest") then
+            local profile = _profileService.GetProfile(player)
+            if profile then
+                local alreadyClaimed = profile.hasClaimedStarterKit == true
+                if not alreadyClaimed then
+                    profile.hasClaimedStarterKit = true
+                    if _inventoryService then
+                        _inventoryService.TryAddItem(player, "torch", 1)
+                        _inventoryService.TryAddItem(player, "field_knife", 1)
+                        _inventoryService.TryAddItem(player, "warm_clothing", 1)
+                        _inventoryService.TryAddItem(player, "healing_potion", 3)
+                        _inventoryService.TryAddItem(player, "wood", 8)
+                        _inventoryService.TryAddItem(player, "stone", 6)
+                        _inventoryService.TryAddItem(player, "cloth", 4)
+                        _inventoryService.TryAddItem(player, "herb", 4)
+                        _inventoryService.TryAddItem(player, "water", 2)
+                    end
+                    if _questService then
+                        _questService.TryClaimQuestReward(player, "q_starter_kit")
+                    end
+                    if notificationRemote then
+                        notificationRemote:FireClient(player, "STARTER SUPPLIES CLAIMED!", "Equipped with Torch, Field Knife, Explorer's Parka, and Salves! Press [Q] for Quests, [C] for Crafting, [M] for Map.")
+                    end
+                else
+                    -- Ensure they still have at least basic tools
+                    if _inventoryService then
+                        if _inventoryService.GetItemCount(player, "torch") == 0 then
+                            _inventoryService.TryAddItem(player, "torch", 1)
+                        end
+                        if _inventoryService.GetItemCount(player, "field_knife") == 0 then
+                            _inventoryService.TryAddItem(player, "field_knife", 1)
+                        end
+                    end
+                    if notificationRemote then
+                        notificationRemote:FireClient(player, "EXPEDITION SUPPLIES READY", "Your Torch, Field Knife, and Explorer's Parka are in your Hotbar and Inventory! Press [C] to Craft, [Q] for Quests.")
+                    end
+                end
+            end
+
+        -- 3. Story Clue Interaction
         elseif parentInstance:IsA("BasePart") and CollectionService:HasTag(parentInstance, "TFF_StoryClue") then
             local clueId = parentInstance:GetAttribute("ClueId") or "safe_haven_orders"
             local data = StoryDefinitions.Clues[clueId]
@@ -595,19 +644,39 @@ local function createDefaultProfile(): Types.PlayerProfile
         schemaVersion = SCHEMA_VERSION,
         level = 1,
         xp = 0,
-        forestCoins = 0,
+        forestCoins = 50,
         ancientTokens = 0,
-        inventory = {},
-        equipment = {},
+        inventory = {
+            { ItemId = "torch", Quantity = 1 },
+            { ItemId = "field_knife", Quantity = 1 },
+            { ItemId = "warm_clothing", Quantity = 1 },
+            { ItemId = "healing_potion", Quantity = 3 },
+            { ItemId = "wood", Quantity = 8 },
+            { ItemId = "stone", Quantity = 6 },
+            { ItemId = "cloth", Quantity = 4 },
+            { ItemId = "herb", Quantity = 4 },
+            { ItemId = "water", Quantity = 2 },
+        },
+        equipment = {
+            mainHand = "field_knife",
+            body = "warm_clothing",
+        },
         unlockedRecipes = {
             torch = true,
             healing_potion = true,
             basic_tool = true,
+            field_knife = true,
+            wooden_spear = true,
+            arrow = true,
+            warm_clothing = true,
         },
         completedQuests = {},
-        activeQuests = {},
+        activeQuests = {
+            q_starter_kit = { progress = 1, completed = false },
+            q_first_steps = { progress = 0, completed = false },
+        },
         achievements = {},
-        discoveries = {},
+        discoveries = { ["Safe Haven"] = true },
         cosmetics = {},
         settings = {
             reducedEffects = false,
@@ -627,14 +696,51 @@ local function migrateProfile(data: any): Types.PlayerProfile
         profile.schemaVersion = 1
     end
     if not profile.inventory then profile.inventory = {} end
-    if not profile.equipment then profile.equipment = {} end
+    if #profile.inventory == 0 then
+        -- Guarantee starter equipment is provided
+        profile.inventory = {
+            { ItemId = "torch", Quantity = 1 },
+            { ItemId = "field_knife", Quantity = 1 },
+            { ItemId = "warm_clothing", Quantity = 1 },
+            { ItemId = "healing_potion", Quantity = 3 },
+            { ItemId = "wood", Quantity = 8 },
+            { ItemId = "stone", Quantity = 6 },
+            { ItemId = "cloth", Quantity = 4 },
+            { ItemId = "herb", Quantity = 4 },
+            { ItemId = "water", Quantity = 2 },
+        }
+    end
+    if not profile.equipment or not next(profile.equipment) then
+        profile.equipment = { mainHand = "field_knife", body = "warm_clothing" }
+    end
     if not profile.unlockedRecipes then
-        profile.unlockedRecipes = { torch = true, healing_potion = true, basic_tool = true }
+        profile.unlockedRecipes = {
+            torch = true,
+            healing_potion = true,
+            basic_tool = true,
+            field_knife = true,
+            wooden_spear = true,
+            arrow = true,
+            warm_clothing = true,
+        }
+    else
+        profile.unlockedRecipes.torch = true
+        profile.unlockedRecipes.healing_potion = true
+        profile.unlockedRecipes.basic_tool = true
+        profile.unlockedRecipes.field_knife = true
+        profile.unlockedRecipes.wooden_spear = true
+        profile.unlockedRecipes.arrow = true
+        profile.unlockedRecipes.warm_clothing = true
     end
     if not profile.completedQuests then profile.completedQuests = {} end
-    if not profile.activeQuests then profile.activeQuests = {} end
+    if not profile.activeQuests or not next(profile.activeQuests) then
+        profile.activeQuests = {
+            q_starter_kit = { progress = 1, completed = false },
+            q_first_steps = { progress = 0, completed = false },
+        }
+    end
     if not profile.achievements then profile.achievements = {} end
-    if not profile.discoveries then profile.discoveries = {} end
+    if not profile.discoveries then profile.discoveries = { ["Safe Haven"] = true } end
     if not profile.cosmetics then profile.cosmetics = {} end
     if not profile.settings then
         profile.settings = { reducedEffects = false, cameraShake = true }
@@ -1181,7 +1287,7 @@ end
 function SurvivalService.Start()
     print("[SurvivalService] SurvivalService started.")
 
-    Players.PlayerAdded:Connect(function(player)
+    local function onPlayerAdded(player: Player)
         _playerStats[player.UserId] = createInitialStats()
         _lastSprintTime[player.UserId] = os.clock()
         _isProcessingDeath[player.UserId] = false
@@ -1199,7 +1305,12 @@ function SurvivalService.Start()
         end)
 
         syncStatsToClient(player)
-    end)
+    end
+
+    Players.PlayerAdded:Connect(onPlayerAdded)
+    for _, player in ipairs(Players:GetPlayers()) do
+        task.spawn(onPlayerAdded, player)
+    end
 
     Players.PlayerRemoving:Connect(function(player)
         _playerStats[player.UserId] = nil

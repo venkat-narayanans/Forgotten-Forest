@@ -27,19 +27,39 @@ local function createDefaultProfile(): Types.PlayerProfile
         schemaVersion = SCHEMA_VERSION,
         level = 1,
         xp = 0,
-        forestCoins = 0,
+        forestCoins = 50,
         ancientTokens = 0,
-        inventory = {},
-        equipment = {},
+        inventory = {
+            { ItemId = "torch", Quantity = 1 },
+            { ItemId = "field_knife", Quantity = 1 },
+            { ItemId = "warm_clothing", Quantity = 1 },
+            { ItemId = "healing_potion", Quantity = 3 },
+            { ItemId = "wood", Quantity = 8 },
+            { ItemId = "stone", Quantity = 6 },
+            { ItemId = "cloth", Quantity = 4 },
+            { ItemId = "herb", Quantity = 4 },
+            { ItemId = "water", Quantity = 2 },
+        },
+        equipment = {
+            mainHand = "field_knife",
+            body = "warm_clothing",
+        },
         unlockedRecipes = {
             torch = true,
             healing_potion = true,
             basic_tool = true,
+            field_knife = true,
+            wooden_spear = true,
+            arrow = true,
+            warm_clothing = true,
         },
         completedQuests = {},
-        activeQuests = {},
+        activeQuests = {
+            q_starter_kit = { progress = 1, completed = false },
+            q_first_steps = { progress = 0, completed = false },
+        },
         achievements = {},
-        discoveries = {},
+        discoveries = { ["Safe Haven"] = true },
         cosmetics = {},
         settings = {
             reducedEffects = false,
@@ -59,14 +79,51 @@ local function migrateProfile(data: any): Types.PlayerProfile
         profile.schemaVersion = 1
     end
     if not profile.inventory then profile.inventory = {} end
-    if not profile.equipment then profile.equipment = {} end
+    if #profile.inventory == 0 then
+        -- Guarantee starter equipment is provided
+        profile.inventory = {
+            { ItemId = "torch", Quantity = 1 },
+            { ItemId = "field_knife", Quantity = 1 },
+            { ItemId = "warm_clothing", Quantity = 1 },
+            { ItemId = "healing_potion", Quantity = 3 },
+            { ItemId = "wood", Quantity = 8 },
+            { ItemId = "stone", Quantity = 6 },
+            { ItemId = "cloth", Quantity = 4 },
+            { ItemId = "herb", Quantity = 4 },
+            { ItemId = "water", Quantity = 2 },
+        }
+    end
+    if not profile.equipment or not next(profile.equipment) then
+        profile.equipment = { mainHand = "field_knife", body = "warm_clothing" }
+    end
     if not profile.unlockedRecipes then
-        profile.unlockedRecipes = { torch = true, healing_potion = true, basic_tool = true }
+        profile.unlockedRecipes = {
+            torch = true,
+            healing_potion = true,
+            basic_tool = true,
+            field_knife = true,
+            wooden_spear = true,
+            arrow = true,
+            warm_clothing = true,
+        }
+    else
+        profile.unlockedRecipes.torch = true
+        profile.unlockedRecipes.healing_potion = true
+        profile.unlockedRecipes.basic_tool = true
+        profile.unlockedRecipes.field_knife = true
+        profile.unlockedRecipes.wooden_spear = true
+        profile.unlockedRecipes.arrow = true
+        profile.unlockedRecipes.warm_clothing = true
     end
     if not profile.completedQuests then profile.completedQuests = {} end
-    if not profile.activeQuests then profile.activeQuests = {} end
+    if not profile.activeQuests or not next(profile.activeQuests) then
+        profile.activeQuests = {
+            q_starter_kit = { progress = 1, completed = false },
+            q_first_steps = { progress = 0, completed = false },
+        }
+    end
     if not profile.achievements then profile.achievements = {} end
-    if not profile.discoveries then profile.discoveries = {} end
+    if not profile.discoveries then profile.discoveries = { ["Safe Haven"] = true } end
     if not profile.cosmetics then profile.cosmetics = {} end
     if not profile.settings then
         profile.settings = { reducedEffects = false, cameraShake = true }

@@ -103,6 +103,66 @@ local QuestDefinitions: { [string]: QuestDefinition } = {
         },
         IsRepeatable = false,
     },
+    q_repair_beacon = {
+        QuestId = "q_repair_beacon",
+        Title = "A Light in the Valley",
+        Description = "Gather 4 Forest Timber and 2 River Stones, then repair and ignite the Safe Haven Central Beacon to establish camp perimeter security.",
+        Category = "Survival",
+        Prerequisites = { "q_starter_kit" },
+        Objectives = {
+            {
+                Type = "CollectItem",
+                Target = "wood",
+                RequiredCount = 4,
+                Description = "Gather 4 Forest Timber",
+            },
+            {
+                Type = "CollectItem",
+                Target = "stone",
+                RequiredCount = 2,
+                Description = "Gather 2 River Stone",
+            },
+            {
+                Type = "Interact",
+                Target = "SafeHaven_CentralBeacon",
+                RequiredCount = 1,
+                Description = "Repair and Ignite the Central Beacon",
+            },
+        },
+        Rewards = {
+            XP = 150,
+            ForestCoins = 100,
+            AncientTokens = 1,
+        },
+        IsRepeatable = false,
+    },
+    q_archive_puzzle = {
+        QuestId = "q_archive_puzzle",
+        Title = "The Sealed Archive",
+        Description = "In the Abandoned Village, light the three Keeper Lanterns in the sacred sequence (Root, Ember, Echo) to unlock the Keeper Archive.",
+        Category = "Mystery",
+        Prerequisites = { "q_investigate_village" },
+        Objectives = {
+            {
+                Type = "Interact",
+                Target = "ArchivePuzzle",
+                RequiredCount = 1,
+                Description = "Solve the Three Lantern Archive Puzzle",
+            },
+            {
+                Type = "CollectClue",
+                Target = "mira_vale_record",
+                RequiredCount = 1,
+                Description = "Recover Mira Vale's Final Record",
+            },
+        },
+        Rewards = {
+            XP = 300,
+            ForestCoins = 150,
+            AncientTokens = 3,
+        },
+        IsRepeatable = false,
+    },
     q_whispering_woods = {
         QuestId = "q_whispering_woods",
         Title = "The Ravine Crossing",

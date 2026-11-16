@@ -45,6 +45,7 @@ local CreatureService = require(ServicesFolder.CreatureService)
 local EventService = require(ServicesFolder.EventService)
 local BossEncounterService = require(ServicesFolder.BossEncounterService)
 local PlayerService = require(ServicesFolder.PlayerService)
+local WorldInteractionService = require(ServicesFolder.WorldInteractionService)
 
 local services = {
     ProfileService = ProfileService,
@@ -63,6 +64,7 @@ local services = {
     EventService = EventService,
     BossEncounterService = BossEncounterService,
     PlayerService = PlayerService,
+    WorldInteractionService = WorldInteractionService,
 }
 
 local orderedServiceKeys = {
@@ -82,6 +84,7 @@ local orderedServiceKeys = {
     "BossEncounterService",
     "QuestService",
     "PlayerService",
+    "WorldInteractionService",
 }
 
 -- 3. Phase 1: Initialize all services

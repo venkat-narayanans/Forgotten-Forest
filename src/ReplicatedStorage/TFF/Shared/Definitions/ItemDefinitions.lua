@@ -297,6 +297,26 @@ local ItemDefinitions: { [string]: Types.ItemDefinition } = {
         IsQuestProtected = false,
         IsTradeable = false,
     },
+    clock_gear = {
+        ItemId = "clock_gear",
+        DisplayName = "Brass Clock Gear",
+        Description = "A weathered brass escapement gear recovered from the Abandoned Village workshop. Fits the clock tower mechanism.",
+        Category = "Quest",
+        Rarity = "Uncommon",
+        StackLimit = 5,
+        IsQuestProtected = true,
+        IsTradeable = false,
+    },
+    archive_key_fragment = {
+        ItemId = "archive_key_fragment",
+        DisplayName = "Archive Seal Fragment",
+        Description = "An engraved stone tablet fragment bearing Keeper runes. Combined to open the sealed Keeper Archive.",
+        Category = "Quest",
+        Rarity = "Rare",
+        StackLimit = 3,
+        IsQuestProtected = true,
+        IsTradeable = false,
+    },
 }
 
 return ItemDefinitions

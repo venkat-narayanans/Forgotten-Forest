@@ -170,6 +170,30 @@ local function runMasterTestSuite()
     assert(starterChest ~= nil, "ExpeditionStarterChest must exist in Safe Haven")
     assert(starterChest:FindFirstChildWhichIsA("ProximityPrompt", true) ~= nil, "ExpeditionStarterChest must have a ProximityPrompt")
 
+    -- Verify Safe Haven Central Beacon & Watchtower
+    local beacon = interactables:FindFirstChild("SafeHaven_CentralBeacon")
+    assert(beacon ~= nil, "SafeHaven_CentralBeacon must exist in Safe Haven")
+    assert(beacon:FindFirstChildWhichIsA("ProximityPrompt", true) ~= nil, "SafeHaven_CentralBeacon must have a ProximityPrompt")
+
+    local watchtower = interactables:FindFirstChild("SafeHaven_Watchtower")
+    assert(watchtower ~= nil, "SafeHaven_Watchtower must exist in Safe Haven")
+    assert(watchtower:FindFirstChild("Prop_BrassTelescope", true) ~= nil, "Watchtower must have Prop_BrassTelescope")
+
+    -- Verify Whispering Woods Landmarks: Split Oak & Ravine Bridge
+    local splitOak = interactables:FindFirstChild("Tree_SplitOak_Landmark")
+    assert(splitOak ~= nil, "Tree_SplitOak_Landmark must exist in Whispering Woods")
+    local ravineBridge = interactables:FindFirstChild("Bridge_Ravine_Timber")
+    assert(ravineBridge ~= nil, "Bridge_Ravine_Timber must exist across Creek Ravine")
+
+    -- Verify Abandoned Village Landmarks: Clock Tower & Keeper Archive
+    local clockTower = interactables:FindFirstChild("Village_ClockTower_48")
+    assert(clockTower ~= nil, "Village_ClockTower_48 must exist in Abandoned Village")
+    local archive = interactables:FindFirstChild("Village_KeeperArchive")
+    assert(archive ~= nil, "Village_KeeperArchive must exist in Abandoned Village")
+    assert(archive:FindFirstChild("ArchiveLantern_Root", true) ~= nil, "Archive must have ArchiveLantern_Root")
+    assert(archive:FindFirstChild("ArchiveLantern_Ember", true) ~= nil, "Archive must have ArchiveLantern_Ember")
+    assert(archive:FindFirstChild("ArchiveLantern_Echo", true) ~= nil, "Archive must have ArchiveLantern_Echo")
+
     -- Verify Practice Resource Nodes in Safe Haven
     local resourceNodes = tffWorld:FindFirstChild("ResourceNodes")
     assert(resourceNodes ~= nil, "ResourceNodes folder must exist")

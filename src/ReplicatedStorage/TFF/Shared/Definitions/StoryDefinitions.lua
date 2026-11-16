@@ -38,7 +38,7 @@ StoryDefinitions.Clues = {
         Title = "Scout's Final Log",
         Author = "Scout Kaelen",
         Region = "Whispering Woods",
-        Body = "Day 4: We reached the Split Oak. Its bark hums with low vibrations. Vane heard whispers in the fog that sounded like his sister's voice. We made camp, but something tall stood on Watcher's Bluff watching our campfire. It had no face, only hollow shadows. If you find this, turn back.",
+        Body = "Day 4: We reached the Split Oak. Its bark hums with low vibrations from the Heartroot beneath. Vane heard whispers in the fog that sounded like his sister's voice—the Echo Seal must have failed completely. We made camp, but something tall stood on Watcher's Bluff watching our campfire. It had no face, only hollow shadows. If you find this, turn back.",
         UnlockDiscovery = "Whispering Woods",
     },
     split_oak_carving = {
@@ -46,7 +46,7 @@ StoryDefinitions.Clues = {
         Title = "Keeper Tree Inscription",
         Author = "Ancient Keeper Runic Text",
         Region = "Whispering Woods",
-        Body = "'When the five seals slumber, the Heartwood awakens in wrath. The roots drink the tears of the forgotten. Let the Keepers beware: touch not the pulsing core unless the five ritual plinths burn with attunement.'",
+        Body = "'Here stands the Split Oak, where the Root Seal anchors the upper groves of Elderglen. When the Keepers divided, lightning split the boughs in two: one half surrendered to winter, one half sustained by living Heartroot sap. Let those who seek the Archive remember: Root before Ember, and Ember before Echo.'",
         UnlockDiscovery = "Split Oak Landmark",
     },
     village_ledger = {
@@ -54,8 +54,24 @@ StoryDefinitions.Clues = {
         Title = "Town Archive Ledger",
         Author = "Archivist Helen",
         Region = "Abandoned Village",
-        Body = "14th Frostfall: The council voted unanimously. We barred the main gate from the inside. The Stalkers had already reached the outer street. The clock tower was stopped at midnight to silence its chime. We buried the Keeper records under the cobblestones. The Heart Below is awake.",
+        Body = "14th Frostfall: The Long Silence has fallen. When Elias Venn connected all five Seals at once, every lantern in Elderglen burned pale blue and all sound ceased. When breath returned, the Keepers were gone and the roots had seized the streets. Mira Vale sealed the Keeper Archive with the Three Lantern Ward (Root, Ember, Echo). The clock tower was stopped at midnight to silence its chime.",
         UnlockDiscovery = "Abandoned Village",
+    },
+    mira_vale_record = {
+        ClueId = "mira_vale_record",
+        Title = "Mira Vale's Final Testament",
+        Author = "Mira Vale, Keeper Scholar",
+        Region = "Abandoned Village Archive",
+        Body = "'Elias was not evil—he loved Elderglen too much to watch the Heartroot slowly wither. But the forest is a living mind, not a machine to be forced into wakefulness. In forcing the five Seals together, he bound his own consciousness into the Heartroot's defense mechanism. The Forest Guardian is Elias's fractured will, defending a forest that no longer remembers peace. Can we live together again, or must we sacrifice what remains?'",
+        UnlockDiscovery = "Keeper Archive",
+    },
+    clock_tower_note = {
+        ClueId = "clock_tower_note",
+        Title = "Mechanic's Work Order",
+        Author = "Master Horologist Bennett",
+        Region = "Abandoned Village Clock Tower",
+        Body = "'The clock mechanism drives the village resonant bells. If the brass escapement gear is restored to the upper drive shaft, the chime will resonate through the valley, weakening the mist barrier blocking the gorge gateway to the Crystal Caverns.'",
+        UnlockDiscovery = "Village Clock Tower",
     },
     miner_warning = {
         ClueId = "miner_warning",
@@ -98,6 +114,14 @@ StoryDefinitions.Dialogues = {
                 prompt = "What landmarks should I look for?",
                 response = "Watch for the massive Split Oak—its canopy can be seen over the mist. Further north, the Village Clock Tower stands tall over ruined cottages. And deep below, the Crystal Grotto shines with brilliant cyan and amethyst light.",
             },
+            ["beacon"] = {
+                prompt = "How do we repair the central beacon?",
+                response = "The beacon's core cracked during the Long Silence. Gather 4 Forest Timber and 2 River Stones from our practice grounds, then interact with the beacon plinth. Lighting it will restore the light barrier, protect the camp from shadow stalkers, and uncover the Whispering Woods on your Survey Map!",
+            },
+            ["watchtower"] = {
+                prompt = "Can I use the watchtower?",
+                response = "Certainly! Climb the timber steps behind my tent. The brass telescope mounted on the upper deck lets you survey the entire valley—from the Split Oak all the way to the Village Clock Tower.",
+            },
         },
     },
     medic = {
@@ -109,6 +133,10 @@ StoryDefinitions.Dialogues = {
             ["warmth"] = {
                 prompt = "How does Warmth work?",
                 response = "When cold rain or dense fog rolls in, your warmth drops rapidly. If it reaches zero, hypothermia sets in, draining your health. Stand near our beacon fire or carry a lit torch (press [1]) to restore warmth.",
+            },
+            ["sanity"] = {
+                prompt = "What are the whispers I hear in the woods?",
+                response = "That is your Sanity slipping. The Heartroot beneath this valley stores every past fear, scream, and memory. Venture too far into the deep woods alone at night, and those memories will whisper to you. Stay near companions or campfire light to keep your mind anchored.",
             },
             ["healing"] = {
                 prompt = "How do I brew healing salves?",
@@ -126,13 +154,21 @@ StoryDefinitions.Dialogues = {
         Title = "Hermit of the Ruins",
         Greeting = "You walk where the living should not tread. The clock stopped long ago, traveler... yet the roots keep spreading.",
         Topics = {
+            ["elderglen"] = {
+                prompt = "What happened to Elderglen?",
+                response = "A century ago, Elderglen was alive with scholars. We Keepers tended the five Seals: Root, Veil, Echo, Ember, and Heart. But Elias Venn tried to force all five to heal the Heartroot at once. The Long Silence swallowed our voices, and the forest grew over our stone.",
+            },
+            ["archive"] = {
+                prompt = "How do I unlock the Keeper Archive?",
+                response = "Mira Vale sealed the archive doors before she fled. You must observe the three puzzle lanterns outside the archway and light them in the sacred sequence: Root, Ember, then Echo. Inside lie her journals and the true records of the Long Silence.",
+            },
             ["guardian"] = {
                 prompt = "What is the Forest Guardian?",
-                response = "It was the ancient shepherd of this forest, born of the Elder Tree. When the seals weakened, corruption took root in its core. Now it strikes with massive root sweeps and shockwaves.",
+                response = "It was the ancient shepherd of this forest, born of the Elder Tree. In forcing the seals, Elias Venn's own spirit was fused into its core. Now it protects a wounded Heartroot, striking down anyone who approaches.",
             },
             ["seals"] = {
                 prompt = "How do I defeat it?",
-                response = "Its core is protected by an invulnerability ward. You must enter the Ancient Grounds ritual circle and channel the 5 Ancient Seals. Only when all five are ignited will the Crystal Heart be exposed to your blades!",
+                response = "Its core is protected by an invulnerability ward. You must enter the Ancient Grounds ritual circle and channel the 5 Ancient Seals: Root, Veil, Echo, Ember, and Heart. Only when all five are ignited will the Crystal Heart be exposed to your blades!",
             },
         },
     },
